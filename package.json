@@ -1,0 +1,28 @@
+{
+  "name": "hcx",
+  "description": "HTML compilation and component utility functions for a framework free or framework light experience.",
+  "version": "0.0.1",
+  "contributors": [
+    {
+      "name": "Simon Y. Blackwell",
+      "email": "s.y.blackwell@eventscope.com"
+    }
+  ],
+  "scripts": {
+    
+  },
+  "devDependencies": {
+    
+  },
+  "dependencies": {
+   
+  },
+  "keywords": [
+    "tlx",
+    "react",
+    "angular",
+    "svelte",
+    "vue"
+  ],
+  "readmeFilename": "README.md"
+}
