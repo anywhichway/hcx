@@ -13,20 +13,17 @@ const recompile = async (target,source) => {
 }
 
 const createRouter = (hcxRouter) => {
-	const target = hcxRouter.attributes.target ? hcxRouter.attributes.target.value : null,
-			pattern = hcxRouter.attributes.pattern ? hcxRouter.attributes.pattern.value : null;
-		if(!target) {
-			throw TypeError("HCXRouter must have a target attribute value");
-		}
-		const elements = document.querySelectorAll(target);
+	const target = hcxRouter.attributes.target ? hcxRouter.attributes.target.value : hcxRouter,
+			path = hcxRouter.attributes.path ? hcxRouter.attributes.path.value : null;
+		const elements = target===hcxRouter ? [hcxRouter] : document.querySelectorAll(target);
 		if(hcxRouter.router) {
 			window.removeEventListener("hashchange",hcxRouter.router);
 		}
 		if(elements.length>0) {
 			const router = (event) => {
-				if(!pattern || new RegExp(pattern).test(location.hash.substring(1))) {
-					const selector = hcxRouter.attributes.for ? hcxRouter.attributes.for.value : location.hash,
-							source = document.querySelector(selector);
+				if(!path || new RegExp(path).test(location.hash.substring(1))) {
+					const selector = hcxRouter.attributes.to ? hcxRouter.attributes.to.value : location.hash,
+							source = selector ? document.querySelector(selector) : null;
 					if(source) {
 						for(const target of elements) {
 							recompile(target,source);
@@ -46,7 +43,7 @@ const createRouter = (hcxRouter) => {
 
 const HCXRouter = hcx.customElement("HCX-router","<div></div>",{
 	shadow:false,
-	observed: ["pattern","target","for"],
+	observed: ["path","target","for"],
 	callbacks:{
 		connected() {
 			createRouter(this);

@@ -64,6 +64,8 @@ There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
 
+2020-01-27 v0.0.03 ALPHA - Added routeless router and model exports upon creation
+
 2020-01-27 v0.0.02 ALPHA - Added `<hcx-include-element>` and `<hcx-router>`. Various bug fixes.
 
 2020-01-24 v0.0.01 ALPHA - Initial release

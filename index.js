@@ -586,31 +586,37 @@ const createModel = hcx.model = (object={},{imports=[],exports=[],reactive}={},d
 			if(property==="hcxElement") {
 				el = value;
 				if(el && el.attributes) {
-					if(el && el.attributes) {
-						for(const attribute of el.attributes) {
-							if(!attribute.name.startsWith("on") && object[attribute.name]===undefined) {
-								const doimport = imports.includes(attribute.name),
-								doexport = exports.includes(attribute.name);
-								if(doimport || doexport) {
-									let value = attribute.value;
-									if(value && value.includes("${")) {
-										value = resolve({node:el,text:value,model:proxy,extras:{},hcx:hcxSync}); //Function("hcx","model","with(model) { return hcx`" + value + "` }")(hcxSync,proxy).wholeText;
-									}
-									try {
-										value = JSON.parse(value);
-									} catch(e) {
-										;
-									}
-									if(doimport) {
-										object[attribute.name] = value;
-									}
-									if(doexport) {
-										el[attribute.name] = value;
-									}
+					for(const attribute of el.attributes) {
+						if(!attribute.name.startsWith("on") && object[attribute.name]===undefined) {
+							const doimport = imports.includes(attribute.name),
+							doexport = exports.includes(attribute.name);
+							if(doimport || doexport) {
+								let value = attribute.value;
+								if(value && value.includes("${")) {
+									value = resolve({node:el,text:value,model:proxy,extras:{},hcx:hcxSync}); //Function("hcx","model","with(model) { return hcx`" + value + "` }")(hcxSync,proxy).wholeText;
+								}
+								try {
+									value = JSON.parse(value);
+								} catch(e) {
+									;
+								}
+								if(doimport) {
+									object[attribute.name] = value;
+								}
+								if(doexport) {
+									el[attribute.name] = value;
 								}
 							}
 						}
 					}
+					Object.keys(object).forEach((key) => {
+						if(exports.includes(key) && !el.attributes[key]) {
+							const value = object[key];
+							if(!value || (typeof(value)!=="object" && typeof(value)!=="function")) {
+								sel.setAttribute(key,value)
+							}
+						}
+					});
 				}
 			} else {
 				object[property] = value;

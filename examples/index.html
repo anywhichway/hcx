@@ -91,9 +91,10 @@ window.addEventListener("DOMContentLoaded",() => {
 	<a href="#route1">Route to 1</a>
 	<a href="#route2">Routed to 2</a>
 	<hcx-router target="#route-target"></hcx-router>
-	<hcx-router pattern="route1" target="#route-target2" for="#always-this"></hcx-router>
+	<hcx-router path="route1" target="#route-target2" to="#always-this"></hcx-router>
 	<div id="route-target"></div>
 	<div id="route-target2"></div>
+	<hcx-router></hcx-router>
 </div>
 
 <hcx-include-element for="#included" style="font-size:200%"></hcx-include-element>
