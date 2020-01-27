@@ -271,24 +271,24 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 
 ## Attribute Directives
 
-### `h-foreach`
+### h-foreach
 
-### `h-forvalues`
+### h-forvalues
 
-### `h-forentries`
+### h-forentries
 
-### `h-forkeys`
+### h-forkeys
 
 ### Custom Directives
 
 
 ## Core Custom Elements
 
-### <hcx-include-element>
+### hcx-include-element
 
 `<hcx-include-element for="<css selector>">`
 
-### <hcx-router>
+### hcx-router
 
 `<hcx-router [path="<string or RegExp>" [, target="<css selector to place content>" [, to="<css selector for content>"]]]>`
 
