@@ -29,8 +29,8 @@ HCX supports industry standard [Custom HTML Elements](https://developer.mozilla.
 
 HCX includes two custom elements: `<hcx-include-element>` and `<hcx-router>`. The router can target any DOM node as a destination and sources its content from
 any other DOM node as well as use a RegExp for pattern matching routes. There can be multiple routers on the same page. In fact, multiple routers
-can respond to the same `haschange` events. You can even have a routeless router, <hcx-router></hcx-router>, which will replace its own content with
-that of DOM nodes having an id that matches the current location hash for a document.
+can respond to the same `hashchange` events. You can even have a routeless router, <hcx-router></hcx-router>, which will replace its own content with
+that of the DOM node having an id that matches the new location hash for a document.
 
 HCX does not use a virtual DOM, it's dependency tracker laser targets just those nodes that need updates. No work has yet been done on
 rendering optimization, but 60Hz (which is adequate for most applications) should be achievable.
@@ -125,6 +125,52 @@ Boolean attributes are handled by attributes of the same name prefixed by a `:`:
 	</body>
 </html>
 ```
+
+## Basic Components
+
+A component is any function that returns an HTMLElement. You can roll your own or use the `hcx` string template literal parser for
+assistance:
+
+```html
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			const Table = ({header="",headings=[],rows=[]}) => { // a table that adjusts to its headings and rows
+				const cols = Math.max(headings.length,rows.reduce((accum,row) => accum = Math.max(accum,row.length),0));
+				rows = rows.map((row) => row.length<cols ? row.slice().concat(new Array(cols-row.length)) : row); // pad rows
+				return hcx`
+					<table>
+					${header ? `<thead id="header"><tr><th colspan="${cols}">${header}</th></tr></thead>` : ''}
+					${headings.length>0 ? `<thead><tr>${headings.reduce((accum,heading) => accum += `<th>${heading}</th>`,"")}</tr></thead>` : ''}
+					${rows.length>0 ? `<tbody>${rows.reduce((accum,row) => accum += `<tr>${row.reduce((accum,value) => accum += `<td>${value==null ? '' : value}</td>`,"")}</tr>`,"")}</tbody>` : ''}
+					</table>`
+				};
+			
+			window.addEventListener("DOMContentLoaded",() => {
+				hcx.compile(document.body,{
+					tableConfig:{
+						header:"My Table",rows:[["a","b","c"],["d","e","f"]
+					},
+					Table
+				})();
+			});
+		</script>
+	</head>
+	<body>
+		${Table(tableConfig)}
+	</body>
+</html>
+
+````
+
+Produces
+
+<table>
+<thead id="header"><tr><th colspan="3">My Table</th></tr></thead>
+<tbody><tr><td>a</td><td>b</td><td>c</td></tr><tr><td>d</td><td>e</td><td>f</td></tr></tbody>
+</table>
+
 
 ## Including Logic
 
@@ -281,7 +327,6 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 
 ### Custom Directives
 
-
 ## Core Custom Elements
 
 ### hcx-include-element
@@ -290,7 +335,54 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 
 ### hcx-router
 
-`<hcx-router [path="<string or RegExp>" [, target="<css selector to place content>" [, to="<css selector for content>"]]]>`
+`<hcx-router [path="<string or RegExp>" [, target="<css selector>" [, to="<css selector for content>"]]]>`
+
+#### Routeless Routing
+
+If you just put `<hcx-router></hcx-router>` on a page, then every time the hash on the page changes the content 
+inside the router tag will be updated with the content from the DOM node (usually a `<template>`) with the same
+id as the hash. Routing could not get any simpler!
+
+### Targeted Routing
+
+If you add a CSS selector as a value to the `target` attribute, the content of the elements matching the selector will
+be replaced. You can target multiple elements at the same time with a loose selector! By default, the
+target is the router itself.
+
+### Selective Routing
+
+If you specify a value for `path`, then it will be used to match against the new hash without the `#`. If the `path` value
+can be converted into a RegExp, that will be used to broaded the match.
+
+### Route Content
+
+If you specificy a CSS selector for the `to` attribute, the content of the first element matching the selector will be
+used as the content for the target area.
+
+### Multiple Routes
+
+You can put multiple routes on the same page. This can be used to match route tags like VUE router-links, e.g.:
+
+```
+<hcx-router path="path1" target="#app" to="#pathonecontent"></hcx-router>
+<hcx-router path="path2" target="#app" to="#pathtwocontent"></hcx-router>
+```
+
+### Functional Routes
+
+You can add an event listener to a route:
+
+```javascript
+const router = document.querySelector(<route css selector>);
+router.addEventListener("route",(event) => { // if you make this async, event.preventDefault() will not work
+	const {selector,targets} = event;
+	// event.preventDefault(); // call this if your event handler actually does the routing
+	// selector = css selector to get content based on route defition
+	// targets = the DOM elements to update based on route definition
+	... some logic, perhaps to retrieve remote content
+});
+
+```
 
 # Notes
 

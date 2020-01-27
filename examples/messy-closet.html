@@ -49,6 +49,9 @@ window.addEventListener("DOMContentLoaded",() => {
 	const included = document.querySelector('[for="#included"]');
 	setTimeout(() => included.setAttribute("for","#included-again"),1000);
 
+	
+	const router3 = document.querySelector('[target="#route-target3"]');
+	router3.addEventListener("route",(event) => console.log(event));
 
 	var els = document.evaluate("//*[@*[contains(name(),':')]]", document, null, XPathResult.ANY_TYPE, null );
 	var el = els.iterateNext();
@@ -90,8 +93,10 @@ window.addEventListener("DOMContentLoaded",() => {
 	<a href="#route2">Routed to 2</a>
 	<hcx-router target="#route-target"></hcx-router>
 	<hcx-router path="route1" target="#route-target2" to="#always-this"></hcx-router>
+	<hcx-router target="#route-target3"></hcx-router>
 	<div id="route-target"></div>
 	<div id="route-target2"></div>
+	<div id="route-target3"></div>
 	<hcx-router></hcx-router>
 </div>
 

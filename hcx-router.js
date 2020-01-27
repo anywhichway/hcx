@@ -22,14 +22,19 @@ const createRouter = (hcxRouter) => {
 		if(elements.length>0) {
 			const router = (event) => {
 				if(!path || new RegExp(path).test(location.hash.substring(1))) {
-					const selector = hcxRouter.attributes.to ? hcxRouter.attributes.to.value : location.hash,
-							source = selector ? document.querySelector(selector) : null;
-					if(source) {
-						for(const target of elements) {
-							recompile(target,source);
+					const selector = hcxRouter.attributes.to ? hcxRouter.attributes.to.value : location.hash,		
+						revent = new Event("route");
+					Object.assign(revent,{selector,targets:elements});
+					hcxRouter.dispatchEvent(revent);
+					if(!revent.defaultPrevented) {
+						const source = selector ? document.querySelector(selector) : null;
+						if(source) {
+							for(const target of elements) {
+								recompile(target,source);
+							}
+						} else {
+							console.warn(`source ${location.hash} is not available for route`)
 						}
-					} else {
-						console.warn(`source ${location.hash} is not available for route`)
 					}
 				}
 			}
