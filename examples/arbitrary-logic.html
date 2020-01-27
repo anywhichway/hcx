@@ -1,0 +1,26 @@
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			window.addEventListener("DOMContentLoaded",() => {
+				hcx.compile(document.body,{message:"Hello World!"})();
+			});
+		</script>
+	</head>
+	<body>
+		<div>
+		<!--hcx
+		${
+			`<ul>
+			${
+				["jack","jane","john"].reduce((accum,item) => {
+					accum += `<li>${item}</li>`;
+					return accum;
+				},"")
+			}
+			</ul>`
+		}
+		</div>
+        -->
+	</body>
+</html>

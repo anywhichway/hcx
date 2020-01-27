@@ -1,0 +1,13 @@
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			window.addEventListener("DOMContentLoaded",() => {
+				hcx.compile(document.body,{count:0},{reactive:true})();
+			});
+		</script>
+	</head>
+	<body>
+		<button on:click="${count++}">Click Count:${count}</button>
+	</body>
+</html>

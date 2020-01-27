@@ -12,7 +12,7 @@ Core Libaray: 20.1K raw
 
 HTML Compiler eXtensions (HCX) flips JSX on its head. Rather than make JavaScript handle HTML, HCX makes HTML handle JavaScript more directly.
 
-HCX extends JavaScript template notation, i.e. `${ ... javascript }`, into HTML itself.
+HCX extends [JavaScript template literal](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) notation, i.e. `${ ... javascript }`, into HTML itself.
 
 HCX provides utility functions you can wrap around existing components or plain old HTMLElement DOM nodes to bind forms to models and
 event handlers to anything you can select via CSS.
@@ -25,7 +25,7 @@ instead of `<div v-text="message"></div>` just use `<div>${message}</div>`. This
 instead of `<span v-text="message | capitalize"></span>` use `<span>${message.toUpperCase()}</span>` or even the new JavaScript pipe operator when it becomes
 available `<span>${message |> capitalize}</span>`.
 
-HCX supports industry standard Custom HTML Elements. In fact, you can turn any HTMLElement DOM node into a Custom HTML Element.
+HCX supports industry standard [Custom HTML Elements](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements). In fact, you can turn any HTMLElement DOM node into a Custom HTML Element.
 
 HCX includes two custom elements: `<hcx-include-element>` and `<hcx-router>`. The router can target any DOM node as a destination and sources its content from
 any other DOM node as well as use a RegExp for pattern matching routes. There can be multiple routers on the same page. In fact, multiple routers
@@ -58,15 +58,246 @@ will be available. HCX curently runs in the most recent versions of Chrome, Fire
 
 `npm install hcx`
 
-If you don't want to copy files out of `node_modules/hcx` and are using Express, try `modulastic` to expose the hcx files directly.
+If you don't want to copy files out of `node_modules/hcx` and are using Express, try [modulastic](https://www.npmjs.com/package/modulastic) to expose the hcx files directly.
 
-See the `examples/index.hml` file to see how to use specific functions. More documentation coming ...
+Partial documentation exists below. Also see the `examples/messy-closet.hml` file to see how to use specific functions. 
+
+More documentation coming ...
+
+## Basic Use
+
+In the most simple case, a document body can be bound to a model and rendered:
+
+
+```html
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			window.addEventListener("DOMContentLoaded",() => {
+				hcx.compile(document.body,{message:"Hello World!"})();
+			});
+		</script>
+	</head>
+	<body>
+		<div>${message}</div>
+	</body>
+</html>
+```
+
+Sub-nodes and attributes can also be targetted:
+
+```html
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			window.addEventListener("DOMContentLoaded",() => {
+				const el = document.getElementById("themessage");
+				hcx.compile(el,{message:"Hello World!",date:new Date()})();
+			});
+		</script>
+	</head>
+	<body>
+		<div id="themessage" date="${date}">${message}</div>
+	</body>
+</html>
+```
+
+## Boolean Attributes
+
+Boolean attributes are handled by attributes of the same name prefixed by a `:`:
+
+
+```html
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			window.addEventListener("DOMContentLoaded",() => {
+				hcx.compile(document.body,{box1:true,box2:false})();
+			});
+		</script>
+	</head>
+	<body>
+		Box1: <input type="checkbox" :checked="${box1}">
+		Box2: <input type="checkbox" :checked="${box2}">
+	</body>
+</html>
+```
+
+## Including Logic
+
+Arbitrarily complex JavaScript logic can be included by enclosing the script in a special comment starting with `<!--hcx`:
+
+```html
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			window.addEventListener("DOMContentLoaded",() => {
+				hcx.compile(document.body,{message:"Hello World!"})();
+			});
+		</script>
+	</head>
+	<body>
+		<div>
+		<!--hcx
+		${
+			`<ul>
+			${
+				["jack","jane","john"].reduce((accum,item) => {
+					accum += `<li>${item}</li>`;
+					return accum;
+				},"")
+			}
+			</ul>`
+		}
+		</div>
+        -->
+	</body>
+</html>
+```
+
+## Debugging
+
+```html
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			window.addEventListener("DOMContentLoaded",() => {
+				hcx.compile(document.body,{message:"Hello World!"})();
+			});
+		</script>
+	</head>
+	<body>
+		<div>
+		<!--hcx
+		${
+			`<ul>
+			${
+				["jack","jane","john"].reduce((accum,item) => {
+					debugger;
+					accum += `<li>${item}</li>`;
+					return accum;
+				},"")
+			}
+			</ul>`
+		}
+		</div>
+        -->
+	</body>
+</html>
+```
+
+## Reactivity
+
+Any HTML can be made reactive by passing in a reactor:
+
+```html
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			window.addEventListener("DOMContentLoaded",() => {
+				const reactive = hcx.reactor({message:"Wait for it ...."});
+				hcx.compile(document.body,reactive)();
+				setTimeout(() => reactive.message="Hello World!",2000);
+			});
+		</script>
+	</head>
+	<body>
+		<div>${message}</div>
+	</body>
+</html>
+```
+
+You can also implement a counter with an `on:click` attribute:
+
+```html
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			window.addEventListener("DOMContentLoaded",() => {
+				const reactive = hcx.reactor({count:0});
+				hcx.compile(document.body,reactive)();
+			});
+		</script>
+	</head>
+	<body>
+		<button on:click="${count++}">Click Count:${count}</button>
+	</body>
+</html>
+```
+
+If you do not need to access the reactor ourside the context of the HTML, you can use a shorthand:
+
+```html
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			window.addEventListener("DOMContentLoaded",() => {
+				hcx.compile(document.body,{count:0},{reactive:true)();
+			});
+		</script>
+	</head>
+	<body>
+		<button on:click="${count++}">Click Count:${count}</button>
+	</body>
+</html>
+```
+
+Regular 'on...' attributes can also be used (although they may result in a console warning about an unexpected '{' token):
+
+```html
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			window.addEventListener("DOMContentLoaded",() => {
+				const reactive = hcx.reactor({count:0});
+				hcx.compile(document.body,reactive)();
+			});
+		</script>
+	</head>
+	<body>
+		<button onclick="${count++}">Click Count:${count}</button>
+	</body>
+</html>
+```
+
+## Attribute Directives
+
+### `h-foreach`
+
+### `h-forvalues`
+
+### `h-forentries`
+
+### `h-forkeys`
+
+### Custom Directives
+
+
+## Core Custom Elements
+
+### `<hcx-include-element for="<css selector>">`
+
+
+### `<hcx-router [path="<string or RegExp>" [, target="<css selector to place content>" [, to="<css selector for content>"]]]>`
+
+
 
 # Notes
 
 There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
+
+2020-01-27 v0.0.05 ALPHA - Documentation updates
 
 2020-01-27 v0.0.04 ALPHA - Documentation updates
 
