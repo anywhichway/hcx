@@ -27,9 +27,13 @@ available `<span>${message |> capitalize}</span>`.
 
 HCX supports industry standard Custom HTML Elements. In fact, you can turn any HTMLElement DOM node into a Custom HTML Element.
 
-HCX includes two custom elements: `<hcx-include-element>` and `<hcx-router>`. The router can target any DOM node as a destination ans sources its content from
-any other DOM node as well as use a RegExp for pattend matching routes. There can be multiple routers on the same page. In fact, multiple routers
-can respond to the same `haschange` events.
+HCX includes two custom elements: `<hcx-include-element>` and `<hcx-router>`. The router can target any DOM node as a destination and sources its content from
+any other DOM node as well as use a RegExp for pattern matching routes. There can be multiple routers on the same page. In fact, multiple routers
+can respond to the same `haschange` events. You can even have a routeless router, <hcx-router></hcx-router>, which will replace its own content with
+that of DOM nodes having an id that matches the current location hash for a document.
+
+HCX does not use a virtual DOM, it's dependency tracker laser targets just those nodes that need updates. No work has yet been done on
+rendering optimization, but 60Hz (which is adequate for most applications) should be achievable.
 
 There is no build environment/pre-compilation required.
 
