@@ -284,12 +284,13 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 
 ## Core Custom Elements
 
-### `<hcx-include-element for="<css selector>">`
+### <hcx-include-element>
 
+`<hcx-include-element for="<css selector>">`
 
-### `<hcx-router [path="<string or RegExp>" [, target="<css selector to place content>" [, to="<css selector for content>"]]]>`
+### <hcx-router>
 
-
+`<hcx-router [path="<string or RegExp>" [, target="<css selector to place content>" [, to="<css selector for content>"]]]>`
 
 # Notes
 
