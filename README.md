@@ -133,9 +133,9 @@ assistance:
 
 ```html
 <html>
-	<head>
-		<script type="module" src="../index.js"></script>
-		<script>
+  <head>
+    <script type="module" src="../index.js"></script>
+	  <script>
 		  const Table = ({header="",headings=[],rows=[]}) => { // a table that adjusts to its headings and rows
 		    const cols = Math.max(headings.length,rows.reduce((accum,row) => accum = Math.max(accum,row.length),0));
 		    rows = rows.map((row) => row.length<cols ? row.slice().concat(new Array(cols-row.length)) : row); // pad rows
@@ -143,7 +143,11 @@ assistance:
 		    <table>
 		    ${header ? `<thead id="header"><tr><th colspan="${cols}">${header}</th></tr></thead>` : ''}
 		    ${headings.length>0 ? `<thead><tr>${headings.reduce((accum,heading) => accum += `<th>${heading}</th>`,"")}</tr></thead>` : ''}
-		    ${rows.length>0 ? `<tbody>${rows.reduce((accum,row) => accum += `<tr>${row.reduce((accum,value) => accum += `<td>${value==null ? '' : value}</td>`,"")}</tr>`,"")}</tbody>` : ''}
+		    ${rows.length>0
+		        ? `<tbody>${rows.reduce((accum,row) => 
+		                    accum += `<tr>${row.reduce((accum,value) => accum += `<td>${value==null ? '' : value}</td>`,"")}</tr>`,"")}
+		          </tbody>` 
+		        : ''}
 		    </table>`
 		  };
 			
@@ -155,11 +159,11 @@ assistance:
 		      Table
 		    })();
 		   });
-		</script>
-	</head>
-	<body>
-		${Table(tableConfig)}
-	</body>
+	  </script>
+  </head>
+  <body>
+    ${Table(tableConfig)}
+  </body>
 </html>
 
 ````
