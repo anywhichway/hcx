@@ -182,7 +182,7 @@ For micro-UI design, components can be stored as separate UI files with their ow
 </html>
 ```
 
-See the section on hcx-router section on [Remote Content](#remote-content) for even simpler remote templates.
+See the hcx-router section on [Remote Content](#remote-content) for even simpler remote templates.
 
 ## Boolean Attributes
 
