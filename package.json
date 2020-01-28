@@ -1,7 +1,7 @@
 {
   "name": "hcx",
   "description": "HTML compilation and component utility functions for a framework free or framework light UI.",
-  "version": "0.0.05",
+  "version": "0.0.06",
   "contributors": [
     {
       "name": "Simon Y. Blackwell",
