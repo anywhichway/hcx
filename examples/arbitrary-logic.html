@@ -2,12 +2,12 @@
 	<head>
 		<script type="module" src="../index.js"></script>
 		<script>
-			window.addEventListener("DOMContentLoaded",() => {
-				hcx.compile(document.body,{message:"Hello World!"})();
-			});
+		const loaded = () => {
+			hcx.compile(document.body,{message:"Hello World!"})()
+		}
 		</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		<div>
 		<!--hcx
 		${

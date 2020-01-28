@@ -2,12 +2,12 @@
 	<head>
 		<script type="module" src="../index.js"></script>
 		<script>
-			window.addEventListener("DOMContentLoaded",() => {
-				hcx.compile(document.body,{count:0},{reactive:true})();
-			});
+			const loaded = () => {
+				hcx.compile(document.body,{count:0},{reactive:true})()
+			}
 		</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		<button on:click="${count++}">Click Count:${count}</button>
 	</body>
 </html>

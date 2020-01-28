@@ -2,12 +2,12 @@
 	<head>
 		<script type="module" src="../index.js"></script>
 		<script>
-			window.addEventListener("DOMContentLoaded",() => {
+			const loaded = () => {
 				hcx.compile(document.body,{box1:true,box2:false})();
-			});
+			}
 		</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		Box1: <input type="checkbox" :checked="${box1}">
 		Box2: <input type="checkbox" :checked="${box2}">
 	</body>

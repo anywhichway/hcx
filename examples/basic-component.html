@@ -13,12 +13,19 @@
 					</table>
 				`
 			};
-			window.addEventListener("DOMContentLoaded",() => {
-				hcx.compile(document.body,{tableConfig:{header:"My Table",rows:[["a","b","c"],["d","e","f"]]},Table})();
-			});
+		</script>
+		<script>
+			const loaded = () => {
+				hcx.compile(document.body,{
+			      tableConfig:{
+			        header:"My Table",rows:[["a","b","c"],["d","e","f"]]
+			        },
+			      Table
+			    })();
+			}
 		</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		${Table(tableConfig)}
 	</body>
 </html>

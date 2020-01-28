@@ -9,6 +9,7 @@ if(typeof(window)!=="undefined") {
 }
 export default hcx;
 
+
 const parser = new DOMParser(),
 AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
@@ -29,6 +30,19 @@ const DIRECTIVES = {
 		}
 }
 
+const asDOM = hcx.asDOM = (value) => {
+	let node = parser.parseFromString(`<div>${value}</div>`,"text/xml"); // allows parsing of invalid hmtl sub-fragments like <tbody> without <table>
+	const err = node.querySelector("parsererror");
+	if(err) {
+		console.warn(err.innerText,value);
+		node = parser.parseFromString(value,"text/html");
+	} else {
+		node = XMLtoHTML(node.firstChild);
+	}
+	node.normalize();
+	return node.childNodes.length>1 ? [].slice.call(node.childNodes) : node.firstChild;
+}
+
 function hcxSync(strings,...args) {
 	if(args.some((arg) => arg && typeof(arg)==="object" && arg instanceof Node)) {
 		args = args.map((arg) => arg && typeof(arg)==="object" && arg instanceof Node ? arg : new Text(arg+""))
@@ -37,19 +51,7 @@ function hcxSync(strings,...args) {
 	} 
 	const value = strings.reduce((accum,str,i) => i<args.length ? accum += str + (args[i]===undefined ? "" : args[i]) : accum += str,"").trim();
 	if(value.startsWith("<") && value.endsWith(">")) {
-		let node = parser.parseFromString(`<div>${value}</div>`,"text/xml"); // allows parsing of invalid hmtl sub-fragments like <tbody> without <table>
-		const err = node.querySelector("parsererror");
-		if(err) {
-			console.warn(err.innerText,value);
-			node = parser.parseFromString(`<body>${value}</body>`,"text/html").body;
-		}
-		node.normalize();
-		if(err) { // returning parsed HTML
-			return node.childNodes.length>1 ? [].slice.call(node.childNodes) : node.firstChild;
-		}
-		// XML nodes are not HTMLElements, so we need to create them as such
-		const nodes = [].slice.call(node.childNodes).map((node) => XMLtoHTML(node));
-		return nodes.length>1 ? nodes : nodes[0]
+		return asDOM(value);
 	}
 	return new Text(value);
 }
@@ -62,7 +64,7 @@ async function resolve({node,text,model,extras,hcx}) {
 			let name = e.message.trim().split(" ")[0].replace(/['"]/g,""),
 			value = "";
 			const el = node && node instanceof Text ? node.parentElement : node;
-			if(el && el.hasAttribute(name)) {
+			if(el && el.hasAttribute && el.hasAttribute(name)) {
 				value = el.getAttribute(name);
 				if(value.includes("${")) {
 					value = (await resolve({node,text:value,model,extras,hcx})).wholeText;

@@ -2,13 +2,12 @@
 	<head>
 		<script type="module" src="../index.js"></script>
 		<script>
-			window.addEventListener("DOMContentLoaded",() => {
-				const el = document.getElementById("themessage");
-				hcx.compile(el,{message:"Hello World!",date:new Date()})();
-			});
+			const loaded = () => {
+				hcx.compile(document.getElementById("themessage"),{date:new Date(),message:"Hello World!"})()
+			}
 		</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		<div id="themessage" date="${date}">${message}</div>
 	</body>
 </html>

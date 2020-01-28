@@ -72,14 +72,12 @@ In the most simple case, a document body can be bound to a model and rendered:
 ```html
 <html>
 	<head>
-		<script type="module" src="../index.js"></script>
-		<script>
-			window.addEventListener("DOMContentLoaded",() => {
-				hcx.compile(document.body,{message:"Hello World!"})();
-			});
-		</script>
+	<script type="module" src="../index.js"></script>
+	<script>
+		const loaded = () => hcx.compile(document.body,{message:"Hello World!"})())
+	</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		<div>${message}</div>
 	</body>
 </html>
@@ -92,13 +90,13 @@ Sub-nodes and attributes can also be targetted:
 	<head>
 		<script type="module" src="../index.js"></script>
 		<script>
-			window.addEventListener("DOMContentLoaded",() => {
+			const loaded = () => {
 				const el = document.getElementById("themessage");
 				hcx.compile(el,{message:"Hello World!",date:new Date()})();
-			});
+			};
 		</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		<div id="themessage" date="${date}">${message}</div>
 	</body>
 </html>
@@ -114,12 +112,12 @@ Boolean attributes are handled by attributes of the same name prefixed by a `:`:
 	<head>
 		<script type="module" src="../index.js"></script>
 		<script>
-			window.addEventListener("DOMContentLoaded",() => {
+			const loaded = () => {
 				hcx.compile(document.body,{box1:true,box2:false})();
 			});
 		</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		Box1: <input type="checkbox" :checked="${box1}">
 		Box2: <input type="checkbox" :checked="${box2}">
 	</body>
@@ -151,17 +149,17 @@ assistance:
 		    </table>`
 		  };
 			
-		  window.addEventListener("DOMContentLoaded",() => {
+		  const loaded = () => {
 		    hcx.compile(document.body,{
 		      tableConfig:{
-		        header:"My Table",rows:[["a","b","c"],["d","e","f"]
+		        header:"My Table",rows:[["a","b","c"],["d","e","f"]]
 		        },
 		      Table
 		    })();
-		   });
+		   }
 	  </script>
   </head>
-  <body>
+  <body onload="loaded(event)">
     ${Table(tableConfig)}
   </body>
 </html>
@@ -185,12 +183,12 @@ Arbitrarily complex JavaScript logic can be included by enclosing the script in 
 	<head>
 		<script type="module" src="../index.js"></script>
 		<script>
-			window.addEventListener("DOMContentLoaded",() => {
+			const loaded = () => {
 				hcx.compile(document.body,{message:"Hello World!"})();
-			});
+			}
 		</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		<div>
 		<!--hcx
 		${
@@ -216,12 +214,12 @@ Arbitrarily complex JavaScript logic can be included by enclosing the script in 
 	<head>
 		<script type="module" src="../index.js"></script>
 		<script>
-			window.addEventListener("DOMContentLoaded",() => {
+			const loded = () => {
 				hcx.compile(document.body,{message:"Hello World!"})();
-			});
+			}
 		</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		<div>
 		<!--hcx
 		${
@@ -270,13 +268,13 @@ You can also implement a counter with an `on:click` attribute:
 	<head>
 		<script type="module" src="../index.js"></script>
 		<script>
-			window.addEventListener("DOMContentLoaded",() => {
+			const loaded = () => {
 				const reactive = hcx.reactor({count:0});
 				hcx.compile(document.body,reactive)();
-			});
+			}
 		</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		<button on:click="${count++}">Click Count:${count}</button>
 	</body>
 </html>
@@ -289,12 +287,12 @@ If you do not need to access the reactor ourside the context of the HTML, you ca
 	<head>
 		<script type="module" src="../index.js"></script>
 		<script>
-			window.addEventListener("DOMContentLoaded",() => {
+			const loaded = () => {
 				hcx.compile(document.body,{count:0},{reactive:true)();
-			});
+			}
 		</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		<button on:click="${count++}">Click Count:${count}</button>
 	</body>
 </html>
@@ -307,13 +305,13 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 	<head>
 		<script type="module" src="../index.js"></script>
 		<script>
-			window.addEventListener("DOMContentLoaded",() => {
+			const loaded = () => {
 				const reactive = hcx.reactor({count:0});
 				hcx.compile(document.body,reactive)();
-			});
+			}
 		</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		<button onclick="${count++}">Click Count:${count}</button>
 	</body>
 </html>
@@ -356,12 +354,23 @@ target is the router itself.
 ### Selective Routing
 
 If you specify a value for `path`, then it will be used to match against the new hash without the `#`. If the `path` value
-can be converted into a RegExp, that will be used to broaded the match.
+starts a `/` and can be converted into a RegExp, that will be used to broaded the match. Hence, do not start regular paths with a `/`.
+
+### Parameterized Routes
+
+If the 'path` attribute contains parameters, e.g. `/user/:id`, or a query string, the parameters will be parsed and used as the data model
+during the rendering process.
 
 ### Route Content
 
 If you specificy a CSS selector for the `to` attribute, the content of the first element matching the selector will be
 used as the content for the target area.
+
+### Remote Content
+
+If the `to` attribute value does not result in the matching of an HTML element, an attempt is made to convert the value to a URL and
+retrieve the file at the URL. If the file can be retrieved and successfully parsed as HTML with a body, the body is used. If it
+is HTML without a body, then all the HTML is used.
 
 ### Multiple Routes
 
@@ -381,7 +390,7 @@ const router = document.querySelector(<route css selector>);
 router.addEventListener("route",(event) => { // if you make this async, event.preventDefault() will not work
 	const {selector,targets} = event;
 	// event.preventDefault(); // call this if your event handler actually does the routing
-	// selector = css selector to get content based on route defition
+	// selector = css selector or perhaps a path to get content based on route definition
 	// targets = the DOM elements to update based on route definition
 	... some logic, perhaps to retrieve remote content
 });
@@ -393,6 +402,8 @@ router.addEventListener("route",(event) => { // if you make this async, event.pr
 There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
+
+2020-01-28 v0.0.06 ALPHA - Documentation updates. Remote and parameterized routes added.
 
 2020-01-27 v0.0.05 ALPHA - Documentation updates
 
