@@ -334,14 +334,14 @@ Any HTML can be made reactive by passing in a reactor:
 	<head>
 		<script type="module" src="../index.js"></script>
 		<script>
-			window.addEventListener("DOMContentLoaded",() => {
+			const loaded = () => {
 				const reactive = hcx.reactor({message:"Wait for it ...."});
 				hcx.compile(document.body,reactive)();
 				setTimeout(() => reactive.message="Hello World!",2000);
-			});
+			}
 		</script>
 	</head>
-	<body>
+	<body onload="loaded(event)">
 		<div>${message}</div>
 	</body>
 </html>
