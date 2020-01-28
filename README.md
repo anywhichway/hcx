@@ -337,6 +337,8 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 
 ### hcx-router
 
+Include the module `hcx-router.html`.
+
 `<hcx-router [path="<string or RegExp>" [, target="<css selector>" [, to="<css selector for content>"]]]>`
 
 #### Routeless Routing
@@ -345,34 +347,34 @@ If you just put `<hcx-router></hcx-router>` on a page, then every time the hash 
 inside the router tag will be updated with the content from the DOM node (usually a `<template>`) with the same
 id as the hash. Routing could not get any simpler!
 
-### Targeted Routing
+#### Targeted Routing
 
 If you add a CSS selector as a value to the `target` attribute, the content of the elements matching the selector will
 be replaced. You can target multiple elements at the same time with a loose selector! By default, the
 target is the router itself.
 
-### Selective Routing
+#### Selective Routing
 
 If you specify a value for `path`, then it will be used to match against the new hash without the `#`. If the `path` value
 starts a `/` and can be converted into a RegExp, that will be used to broaded the match. Hence, do not start regular paths with a `/`.
 
-### Parameterized Routes
+#### Parameterized Routes
 
 If the 'path` attribute contains parameters, e.g. `/user/:id`, or a query string, the parameters will be parsed and used as the data model
 during the rendering process.
 
-### Route Content
+#### Route Content
 
 If you specificy a CSS selector for the `to` attribute, the content of the first element matching the selector will be
 used as the content for the target area.
 
-### Remote Content
+#### Remote Content
 
 If the `to` attribute value does not result in the matching of an HTML element, an attempt is made to convert the value to a URL and
 retrieve the file at the URL. If the file can be retrieved and successfully parsed as HTML with a body, the body is used. If it
 is HTML without a body, then all the HTML is used.
 
-### Multiple Routes
+#### Multiple Routes
 
 You can put multiple routes on the same page. This can be used to match route tags like VUE router-links, e.g.:
 
@@ -381,7 +383,7 @@ You can put multiple routes on the same page. This can be used to match route ta
 <hcx-router path="path2" target="#app" to="#pathtwocontent"></hcx-router>
 ```
 
-### Functional Routes
+#### Functional Routes
 
 You can add an event listener to a route:
 
