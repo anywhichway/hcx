@@ -417,7 +417,7 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 
 `<hcx-include-element for="<css selector>">`
 
-###hcx-router
+### hcx-router
 
 Include the module `hcx-router.html`.
 
