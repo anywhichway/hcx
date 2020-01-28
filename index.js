@@ -333,8 +333,24 @@ const addEventListenersAux = (el,listeners) => {
 					})
 				}
 			}
+		} else if(type==="function" && key.startsWith("on")) {
+			const ename = key.substring("3");
+			el.addEventListener(ename,handler);
 		}
 	})
+	for(const attribute of [].slice.call(el.attributes)) {
+		if(attribute.name.startsWith("on") && attribute.value.includes("hcx.")) {
+			const ename = attribute.name.startsWith("on:") ? attribute.name.substring(3) : attribute.name.substring(2),
+				value = attribute.value.trim().substring(4),
+				fname = value.substring(0,value.indexOf("("));
+			if(listeners[fname]) {
+				el.addEventListener(ename,(event) => listeners[fname](event));
+				if(!attribute.name.startsWith("on:")) {
+					el.removeAttribute(attribute.name);
+				}
+			}
+		}
+	}
 	return el;
 }
 const addEventListeners = hcx.addEventListeners = (component,listeners={}) => {

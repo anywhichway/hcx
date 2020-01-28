@@ -407,7 +407,56 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 
 Finally, you can add event handlers to multiple HTML elements with a single call:
 
-`addEventHandlers(component,handlers)` - TO BE WRITTEN
+`addEventListeners(component,listeners={})` - `component` can be a function returning an `HTMLElement` or an actual `HTMLElement`.
+
+The `listeners` object can have the following:
+
+1) property names that are CSS selectors and values that are event handling functions, e.g.
+
+```javascript
+{
+	"[name]": function(event) { ... some code ...} // add to all sub-elements that have a name attribute
+}
+
+```
+
+2) a property named `on` with subkey functions named using the normal event names, e.g. 'focus', 'click':
+
+```javascript
+{
+	on: 
+		{
+			click(event) { ... some code ... },
+			focus(event) { ... some code ...}
+		}
+}
+```
+
+These will be registered as the respective event handlers for the event types on the component.
+
+3) property functions named using the normal `on<fname>` approach, e.g. `onclick`:
+
+```javascript
+{
+	onclick(event) { ... some code ...},
+	onfocus(event) { ... some code ...}
+}
+```
+
+These will be registered as the respective event handlers for the event types on the component.
+
+4) arbitrary property functions, e.g.
+
+```javascript
+{
+	myfunction(event) { ... some code ... }
+}
+```
+
+These will replace attributes of the form `onclick="hcx.myfunction(event)"` on the component.
+
+
+
 
 ## Attribute Directives
 
@@ -503,7 +552,7 @@ There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
 
-2020-01-28 v0.0.07 ALPHA - Micro-UI design support.
+2020-01-28 v0.0.07 ALPHA - Micro-UI design support. `addEventListeners` improvements.
 
 2020-01-28 v0.0.06 ALPHA - Documentation updates. Remote and parameterized routes added.
 
