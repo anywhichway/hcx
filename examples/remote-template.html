@@ -1,1 +1,22 @@
-<div>I was loaded from a remote file!</div>
+<html>
+	<head>
+	<!-- 
+		anything in the head will be ignored if the file is loaded as remote content source
+		however, it loaded directly, the head will be used
+		perfect for ui component previewing!
+	 -->
+	<script>
+		const loaded = () => {
+			document.body.appendChild(new Text("PREVIEW MODE"))
+		}
+	</script>
+	</head>
+	<body onload="loaded(event)">
+		<style>
+			div {
+				font-size: 150%
+			}
+		</style>
+		<div>I was loaded from a remote file with a style tag &lt;style>div { font-size: 150% }&lt;/style></div>
+	</body>
+</html>

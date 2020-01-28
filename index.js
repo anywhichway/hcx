@@ -23,7 +23,7 @@ const DIRECTIVES = {
 			for(let currentValue of array) {
 				let child = node.originalChild.cloneNode(true);
 				const extra = {currentValue,index,array,entry:currentValue,entries:array,value:currentValue}
-				child = await render(child,model,undefined,Object.assign(extras,extra));
+				child = await render(child,model,undefined,false,Object.assign(extras,extra));
 				node.appendChild(child);
 				index ++;
 			}
@@ -31,16 +31,16 @@ const DIRECTIVES = {
 }
 
 const asDOM = hcx.asDOM = (value) => {
-	let node = parser.parseFromString(`<div>${value}</div>`,"text/xml"); // allows parsing of invalid hmtl sub-fragments like <tbody> without <table>
+	let node = parser.parseFromString(value,"text/xml"); // allows parsing of invalid hmtl sub-fragments like <tbody> without <table>
 	const err = node.querySelector("parsererror");
 	if(err) {
 		console.warn(err.innerText,value);
 		node = parser.parseFromString(value,"text/html");
 	} else {
-		node = XMLtoHTML(node.firstChild);
+		node = XMLtoHTML(node);
 	}
 	node.normalize();
-	return node.childNodes.length>1 ? [].slice.call(node.childNodes) : node.firstChild;
+	return node.childNodes.length>1 ? node : node.firstChild;
 }
 
 function hcxSync(strings,...args) {
@@ -98,6 +98,13 @@ const XMLtoHTML = (node) => {
 	if(node.nodeType===3) {
 		return new Text(node.data);
 	}
+	if(node.nodeType===9) {
+		const fragment = new DocumentFragment();
+		for(const child of node.childNodes) {
+			fragment.appendChild(XMLtoHTML(child))
+		}
+		return fragment;
+	}
 	return node.cloneNode(true);
 }
 
@@ -109,7 +116,7 @@ const directive = hcx.directive = (f,attributeName="h-"+f.name) => {
 	throw new Error(`directive attributeName must start with 'h-': ${attributeName}`)
 }
 
-const render = hcx.render = async (node,model,target,extras={}) => {
+const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 	node = await node;
 	model = model ? await model : model={};
 	if(model.hcxIsModel) {
@@ -124,6 +131,15 @@ const render = hcx.render = async (node,model,target,extras={}) => {
 		body.normalize();
 		let count  = 0;
 		const max = target.childNodes.length;
+		if(shadow) {
+			while(target.lastChild) {
+				target.removeChild(target.lastChild);
+			}
+			if(!target.shadowRoot) {
+				target.attachShadow({mode: 'open'});
+			}
+			target = target.shadowRoot;
+		}
 		while(target.firstChild && body.firstChild) {
 			count++;
 			target.firstChild.replacementNode = body.firstChild;
@@ -222,7 +238,7 @@ const render = hcx.render = async (node,model,target,extras={}) => {
 				node.replacementNode = value;
 			} else {
 				for(const child of node.childNodes) {
-					await render(child,model,undefined,extras);
+					await render(child,model,undefined,false,extras);
 				}
 				document.renderingNode = node;
 			}
@@ -275,18 +291,21 @@ const render = hcx.render = async (node,model,target,extras={}) => {
 	return node;
 }
 
-const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listeners}={}) => {
+const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listeners,properties,shadow}={}) => {
 	if(el && typeof(el)==="object" && el instanceof HTMLElement) {
-		const f = async (el,_model,target) => {
+		const f = async (el,_model,target,shadow) => {
 			if(!_model) {
 				_model = model;
 				if((imports && imports.length>0) || (exports && exports.length>0) || reactive) {
 					_model = createModel(_model,{imports,exports,reactive})
 				}
 			}
-			el = await render(el,_model,target);
+			el = await render(el,_model,target,shadow);
 			if(listeners) {
 				addEventListeners(el,listeners);
+			}
+			if(properties) {
+				hcx.properties(el,properties);
 			}
 			if(inputs) {
 				bind(el,_model,{inputs});
@@ -334,6 +353,27 @@ const addEventListeners = hcx.addEventListeners = (component,listeners={}) => {
 		return addEventListenersAux(components,listeners);
 	}
 	throw new TypeError("First argument to hcx.addEventListeners must be a function or HTMLElement");
+}
+
+const propertiesAux = (el,properties) => {
+	return Object.assign(el,properties);
+}
+const properties = hcx.properties = (component,properties={}) => {
+	const type = typeof(component);
+	if(type==="function") {
+		return async (...args)  => {
+			const el = await component(...args),
+			type = typeof(el);
+			if(el && typeof(el)==="object" && el instanceof HTMLElement) {
+				return propertiesAux(el,properties);
+			}
+			throw new TypeError("component function must return an HTMLElement for hcx.properties");
+		}
+	}
+	if(component && type==="object" && component instanceof HTMLElement) {
+		return propertiesAux(components,properties);
+	}
+	throw new TypeError("First argument to hcx.properties must be a function or HTMLElement");
 }
 
 const DEPENDENTS = new Map();
@@ -478,7 +518,7 @@ const bind = hcx.bind = (component,modelOrModelArgIndex=0,{inputs="*",imports,ex
 	throw new TypeError("First argument to hcx.bind must be a function or HTMLElement");
 }
 
-const customElement = hcx.customElement = (tagName,component,{observed=[],callbacks={},extend={},defaultModel={},modelArgIndex=0,bound,listeners,reactiveObserved,shadow=true}={}) => {
+const customElement = hcx.customElement = (tagName,component,{observed=[],callbacks={},properties={},extend={},defaultModel={},modelArgIndex=0,bound,listeners,reactiveObserved,shadow=true}={}) => {
 	const type=typeof(component),
 	cls = extend.class || HTMLElement,
 	cname = tagName.split("-").map((part) => part[0].toUpperCase()+part.substring(1)).join(""),
@@ -497,6 +537,7 @@ const customElement = hcx.customElement = (tagName,component,{observed=[],callba
 		throw new TypeError("Second argument to hcx.customElement must be a function or HTMLElement");
 	}
 	_customElement.component = component;
+	Object.assign(_customElement.prototype,properties);
 	_customElement.prototype.construct = function(model={},options={}) {
 		const el = this,
 		_component = _customElement.component;

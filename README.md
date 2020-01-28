@@ -25,22 +25,17 @@ instead of `<div v-text="message"></div>` just use `<div>${message}</div>`. This
 instead of `<span v-text="message | capitalize"></span>` use `<span>${message.toUpperCase()}</span>` or even the new JavaScript pipe operator when it becomes
 available `<span>${message |> capitalize}</span>`.
 
+HCX lets you set `debugger` points directly in your HTML template literals for WYSYWIG debugging.
+
 HCX supports industry standard [Custom HTML Elements](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements). In fact, you can turn any HTMLElement DOM node into a Custom HTML Element.
 
 HCX includes two custom elements: `<hcx-include-element>` and `<hcx-router>`. The router can target any DOM node as a destination and sources its content from
-any other DOM node as well as use a RegExp for pattern matching routes. There can be multiple routers on the same page. In fact, multiple routers
+any other DOM node or a remote file. It can also use a RegExp for pattern matching routes. There can be multiple routers on the same page. In fact, multiple routers
 can respond to the same `hashchange` events. You can even have a routeless router, <hcx-router></hcx-router>, which will replace its own content with
 that of the DOM node having an id that matches the new location hash for a document.
 
 HCX does not use a virtual DOM, it's dependency tracker laser targets just those nodes that need updates. No work has yet been done on
 rendering optimization, but 60Hz (which is adequate for most applications) should be achievable.
-
-There is no build environment/pre-compilation required.
-
-# Why
-
-It is hard to find really good full stack developers, let alone ones with UI design skills. And, translating Photoshop designs or even HTML with CSS over to frameworks
-with the use of JSX or other mechanisms results in cognitive disconnects, time lags, and missed expectations.
 
 HCX allows designers express a UI as HTML and CSS at whatever micro, macro, or monolithic scale they wish and then hand-off to programmers to
 layer in functionality. Designers can continue to adjust much of the HTML while programmers are at work. For designers that wish to code, HCX 
@@ -49,7 +44,7 @@ also makes the transition into bits and pieces of JavaScript easier than moving 
 HCX is a successor to TLX, Template Literal Extensions. It is simpler to use, slightly smaller, and more flexible. It is also far smaller and we think simpler and more
 flexible than a buch of other options out there.
 
-HCX lets you set `debugger` points directly in your HTML template literals for WYSYWIG debugging.
+There is no build environment/pre-compilation required.
 
 # Usage
 
@@ -101,6 +96,93 @@ Sub-nodes and attributes can also be targetted:
 	</body>
 </html>
 ```
+
+## Templates and Remote Content
+
+Templates with encapsulated styles can be compiled and rendered at a later time with new model data:
+
+```html
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			const loaded = () => {
+				const el = document.getElementById("mytemplate"),
+					compiled = hcx.compile(el)();
+				setTimeout(() => {
+					const shadow = true;
+					compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"),shadow)
+				})
+			};
+		</script>
+		<template id="mytemplate">
+			<style>
+				div {
+					font-size: 150%
+				}
+			</style>
+			<div date="${date}">${message}</div>
+		</template>
+	</head>
+	<body onload="loaded(event)">
+		<div>Here is the message:</div>
+		<div id="themessage"></div>
+	</body>
+</html>
+```
+
+For micro-UI design, components can be stored as separate UI files with their own styles:
+
+```html
+<html>
+	<head>
+		<!-- 
+			anything in the head will be ignored if the file is loaded as remote content source
+			however, it loaded directly, the head will be used
+			perfect for ui component previewing!
+		 -->
+		<script>
+			const loaded = () => {
+				document.body.appendChild(new Text("PREVIEW MODE"))
+			}
+		</script>
+	</head>
+	<body onload="loaded(event)">
+		<style>
+			div {
+				font-size: 150%
+			}
+		</style>
+		<div date="${date}">And the message is: ${message}</div>
+	</body>
+<html>
+```
+
+```html
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			const loaded = async () => {
+				const file = await fetch("./micro-ui-template.html"),
+					text = await file.text(),
+					el = hcx.asDOM(text);
+					compiled = hcx.compile(el.body ? el.body : el);
+				setTimeout(() => {
+					const shadow = true;
+					compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"),shadow)
+				})
+			};
+		</script>
+	</head>
+	<body onload="loaded(event)">
+		<div>Here is the message:</div>
+		<div id="themessage"></div>
+	</body>
+</html>
+```
+
+See the section on [hcx-router](hcx-router) for even simpler remote templates.
 
 ## Boolean Attributes
 
@@ -335,7 +417,7 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 
 `<hcx-include-element for="<css selector>">`
 
-### hcx-router
+###hcx-router
 
 Include the module `hcx-router.html`.
 
@@ -356,7 +438,7 @@ target is the router itself.
 #### Selective Routing
 
 If you specify a value for `path`, then it will be used to match against the new hash without the `#`. If the `path` value
-starts a `/` and can be converted into a RegExp, that will be used to broaded the match. Hence, do not start regular paths with a `/`.
+starts with a `/` and can be converted into a RegExp, that will be used to broaded the match. Hence, do not start regular paths with a `/`.
 
 #### Parameterized Routes
 
@@ -365,14 +447,17 @@ during the rendering process.
 
 #### Route Content
 
-If you specificy a CSS selector for the `to` attribute, the content of the first element matching the selector will be
-used as the content for the target area.
+If you specificy a CSS selector for the `href` attribute, the content of the first element matching the selector will be
+used as the content of a shadow DOM in the target area. A shadow DOM is used so that if the source contains `<style>` elements,
+they will not polute the rest of the document.
 
 #### Remote Content
 
-If the `to` attribute value does not result in the matching of an HTML element, an attempt is made to convert the value to a URL and
+If the `href` attribute value does not result in the matching of an HTML element, an attempt is made to convert the value to a URL and
 retrieve the file at the URL. If the file can be retrieved and successfully parsed as HTML with a body, the body is used. If it
 is HTML without a body, then all the HTML is used.
+
+The use of remote content is ideal for micro-UI design. Each element of the UI can be designed and previewed in its own HTML file with its own styling.
 
 #### Multiple Routes
 

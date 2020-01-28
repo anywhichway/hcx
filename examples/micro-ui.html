@@ -1,0 +1,21 @@
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			const loaded = async () => {
+				const file = await fetch("./micro-ui-template.html"),
+					text = await file.text(),
+					el = hcx.asDOM(text);
+					compiled = hcx.compile(el.body ? el.body : el);
+				setTimeout(() => {
+					const shadow = true;
+					compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"),shadow)
+				})
+			};
+		</script>
+	</head>
+	<body onload="loaded(event)">
+		<div>Here is the message:</div>
+		<div id="themessage"></div>
+	</body>
+</html>

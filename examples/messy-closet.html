@@ -63,7 +63,7 @@ window.addEventListener("DOMContentLoaded",() => {
 
 <template id="included"><div>Included</div></template>
 <template id="included-again"><div>Included Again</div></template>
-<template id="always-this"><div>Included for 1</div></template>
+<template id="always-this"><style>div { font-size: 150%} </style><div>Included for 1 with style element</div></template>
 
 <template id="content" rows="[[1,2],[3,4]]">
 	<div id="test">Test Div ${id}<br>
@@ -95,9 +95,9 @@ window.addEventListener("DOMContentLoaded",() => {
 	<a href="#remote-template">Route to remote template</a>
 	<a href="#parameterized/user1?age=21">Parameterized userid:user1</a>
 	<hcx-router target="#route-target"></hcx-router>
-	<hcx-router path="route1" target="#route-target2" to="#always-this"></hcx-router>
-	<hcx-router path="remote-template" to="./remote-template.html"></hcx-router>
-	<hcx-router path="parameterized/:userid" to="#parameterized"></hcx-router>
+	<hcx-router path="route1" target="#route-target2" href="#always-this"></hcx-router>
+	<hcx-router path="remote-template" href="./remote-template.html"></hcx-router>
+	<hcx-router path="parameterized/:userid" href="#parameterized"></hcx-router>
 	<hcx-router target="#route-target3"></hcx-router>
 	<div id="route-target"></div>
 	<div id="route-target2"></div>

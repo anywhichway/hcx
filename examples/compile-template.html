@@ -1,0 +1,27 @@
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			const loaded = () => {
+				const el = document.getElementById("mytemplate"),
+					compiled = hcx.compile(el);
+				setTimeout(() => {
+					const shadow = true;
+					compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"),true)
+				})
+			};
+		</script>
+		<template id="mytemplate">
+			<style>
+				div {
+					font-size: 150%
+				}
+			</style>
+			<div date="${date}">${message}</div>
+		</template>
+	</head>
+	<body onload="loaded(event)">
+		<div>Here is the message:</div>
+		<div id="themessage"></div>
+	</body>
+</html>
