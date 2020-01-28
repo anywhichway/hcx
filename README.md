@@ -14,22 +14,22 @@ HTML Compiler eXtensions (HCX) flips JSX on its head. Rather than make JavaScrip
 
 HCX extends [JavaScript template literal](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) notation, i.e. `${ ... javascript }`, into HTML itself.
 
-HCX provides utility functions you can wrap around existing components or plain old HTMLElement DOM nodes to bind forms to models and
-event handlers to anything you can select via CSS.
+HCX provides utility functions you can wrap around existing components or plain old HTMLElement DOM nodes to [bind forms to models](#binding-inputs) and
+[event handlers](#adding-event-handlers) to anything you can select via CSS.
 
-HCX generally eliminates the need for control flow attribute directives. However, `h-foreach`, `h-forvalues`, `h-forentries`, `h-forkeys` are directly supported
-and custom directives can be added.
+HCX generally eliminates the need for control flow attribute directives. However, [`h-foreach`](#h-foreach), [`h-forvalues`](#h-forvalues), 
+[`h-forentries`](#h-forentries), (`h-forkeys`)[#h-forkeys] are directly supported and [custom directives](#custom-directives) can be added.
 
-HCX compeletely eliminates the need for content replacement directives like VUE's `v-text`. You just reference reactive data directly in your HTML, e.g.
+HCX compeletely eliminates the need for content replacement directives like VUE's `v-text`. You just reference [reactive data](#reactivity) directly in your HTML, e.g.
 instead of `<div v-text="message"></div>` just use `<div>${message}</div>`. This also means that the VUE filter syntax is un-neccesary, e.g.
 instead of `<span v-text="message | capitalize"></span>` use `<span>${message.toUpperCase()}</span>` or even the new JavaScript pipe operator when it becomes
 available `<span>${message |> capitalize}</span>`.
 
-HCX lets you set `debugger` points directly in your HTML template literals for WYSYWIG debugging.
+HCX lets you set [`debugger` points](#debugging) directly in your HTML template literals for WYSYWIG debugging.
 
 HCX supports industry standard [Custom HTML Elements](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements). In fact, you can turn any HTMLElement DOM node into a Custom HTML Element.
 
-HCX includes two custom elements: `<hcx-include-element>` and `<hcx-router>`. The router can target any DOM node as a destination and sources its content from
+HCX includes two custom elements: [`<hcx-include-element>`](#hcx-include-element) and [`<hcx-router>`](#hcx-router). The router can target any DOM node as a destination and sources its content from
 any other DOM node or a remote file. It can also use a RegExp for pattern matching routes. There can be multiple routers on the same page. In fact, multiple routers
 can respond to the same `hashchange` events. You can even have a routeless router, <hcx-router></hcx-router>, which will replace its own content with
 that of the DOM node having an id that matches the new location hash for a document.
@@ -37,7 +37,7 @@ that of the DOM node having an id that matches the new location hash for a docum
 HCX does not use a virtual DOM, it's dependency tracker laser targets just those nodes that need updates. No work has yet been done on
 rendering optimization, but 60Hz (which is adequate for most applications) should be achievable.
 
-HCX allows designers express a UI as HTML and CSS at whatever micro, macro, or monolithic scale they wish and then hand-off to programmers to
+HCX allows designers express a UI as HTML and CSS at whatever [micro](#templates-and-remote-content), macro, or monolithic scale they wish and then hand-off to programmers to
 layer in functionality. Designers can continue to adjust much of the HTML while programmers are at work. For designers that wish to code, HCX 
 also makes the transition into bits and pieces of JavaScript easier than moving into a full build/code oriented environment.
 
@@ -321,6 +321,10 @@ Arbitrarily complex JavaScript logic can be included by enclosing the script in 
 </html>
 ```
 
+## Binding Inputs
+
+TO BE WRITTEN
+
 ## Reactivity
 
 Any HTML can be made reactive by passing in a reactor:
@@ -343,7 +347,9 @@ Any HTML can be made reactive by passing in a reactor:
 </html>
 ```
 
-You can also implement a counter with an `on:click` attribute:
+## Adding Event Handlers
+
+You can implement a reactive counter with an `on:click` attribute:
 
 ```html
 <html>
@@ -362,7 +368,7 @@ You can also implement a counter with an `on:click` attribute:
 </html>
 ```
 
-If you do not need to access the reactor ourside the context of the HTML, you can use a shorthand:
+If you do not need to access the reactor outside the context of the HTML, you can use a shorthand:
 
 ```html
 <html>
@@ -399,6 +405,10 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 </html>
 ```
 
+Finally, you can add event handlers to multiple HTML elements with a single call:
+
+`addEventHandlers(component,handlers)` - TO BE WRITTEN
+
 ## Attribute Directives
 
 ### h-foreach
@@ -411,11 +421,14 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 
 ### Custom Directives
 
+There are two core custom directives, but you can add your own. TO BE WRITTEN.
+
 ## Core Custom Elements
 
 ### hcx-include-element
 
-`<hcx-include-element for="<css selector>">`
+Just put `<hcx-include-element for="<css selector>"></hcx-include-element>` in your document and the content of the element selected by `for`
+will be inserterd inside the tags.
 
 ### hcx-router
 
@@ -489,6 +502,8 @@ router.addEventListener("route",(event) => { // if you make this async, event.pr
 There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
+
+2020-01-28 v0.0.07 ALPHA - Micro-UI design support.
 
 2020-01-28 v0.0.06 ALPHA - Documentation updates. Remote and parameterized routes added.
 
