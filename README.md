@@ -360,7 +360,7 @@ starts a `/` and can be converted into a RegExp, that will be used to broaded th
 
 #### Parameterized Routes
 
-If the 'path` attribute contains parameters, e.g. `/user/:id`, or a query string, the parameters will be parsed and used as the data model
+If the `path` attribute contains parameters, e.g. `/user/:id`, or a query string, the parameters will be parsed and used as the data model
 during the rendering process.
 
 #### Route Content
