@@ -1,0 +1,28 @@
+<html>
+	<head>
+		<script type="module" src="../index.js"></script>
+		<script>
+			const loaded = async () => {
+				const file = await fetch("./micro-design-template.html"),
+					text = await file.text(),
+					dom = hcx.asDOM(text),
+					body = dom.querySelector("body"),
+					head = dom.querySelector("head"),
+					el = body ? body : (!head ? dom : null),
+					compiled = el ? hcx.compile(el) : null;
+				setTimeout(() => {
+					if(compiled) {
+						const shadow = true;
+						compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"),shadow)
+					} else {
+						alert("error loading template")
+					}
+				})
+			};
+		</script>
+	</head>
+	<body onload="loaded(event)">
+		<div>Here is the message:</div>
+		<div id="themessage"></div>
+	</body>
+</html>

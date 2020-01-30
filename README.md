@@ -2,10 +2,9 @@
 
 HTML compilation and component utility functions for a framework free or framework light UI.
 
-Core Libaray: 20.1K raw
+Core Library:
 
-	1) ES 2017 - 20.1K raw, 11.8K terser compress, 4k gzip
-	2) ES 2015 - 36.7K raw, 15.7K terser compress, 5k gzip
+	1) ES 2017 - 24.2K raw, 13.7K terser compress, 4.5k gzip
 
 
 # What
@@ -15,7 +14,7 @@ HTML Compiler eXtensions (HCX) flips JSX on its head. Rather than make JavaScrip
 HCX extends [JavaScript template literal](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) notation, i.e. `${ ... javascript }`, into HTML itself.
 
 HCX provides utility functions you can wrap around existing components or plain old HTMLElement DOM nodes to [bind forms to models](#binding-inputs) and
-[event handlers](#adding-event-handlers) to anything you can select via CSS.
+[event listeners](#adding-event-listeners) to anything you can select via CSS.
 
 HCX generally eliminates the need for control flow attribute directives. However, [`h-foreach`](#h-foreach), [`h-forvalues`](#h-forvalues), 
 [`h-forentries`](#h-forentries), (`h-forkeys`)[#h-forkeys] are directly supported and [custom directives](#custom-directives) can be added.
@@ -27,7 +26,7 @@ available `<span>${message |> capitalize}</span>`.
 
 HCX lets you set [`debugger` points](#debugging) directly in your HTML template literals for WYSYWIG debugging.
 
-HCX supports industry standard [Custom HTML Elements](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements). In fact, you can turn any HTMLElement DOM node into a Custom HTML Element.
+HCX supports [industry standard](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements) [Custom HTML Elements](#custome-elements). In fact, you can turn any HTMLElement DOM node into a Custom HTML Element.
 
 HCX includes two custom elements: [`<hcx-include-element>`](#hcx-include-element) and [`<hcx-router>`](#hcx-router). The router can target any DOM node as a destination and sources its content from
 any other DOM node or a remote file. It can also use a RegExp for pattern matching routes. There can be multiple routers on the same page. In fact, multiple routers
@@ -37,7 +36,7 @@ that of the DOM node having an id that matches the new location hash for a docum
 HCX does not use a virtual DOM, it's dependency tracker laser targets just those nodes that need updates. No work has yet been done on
 rendering optimization, but 60Hz (which is adequate for most applications) should be achievable.
 
-HCX allows designers express a UI as HTML and CSS at whatever [micro](#templates-and-remote-content), macro, or monolithic scale they wish and then hand-off to programmers to
+HCX allows designers to express a UI as HTML and CSS at whatever [micro](#templates-and-remote-content), macro, or monolithic scale they wish and then hand-off to programmers to
 layer in functionality. Designers can continue to adjust much of the HTML while programmers are at work. For designers that wish to code, HCX 
 also makes the transition into bits and pieces of JavaScript easier than moving into a full build/code oriented environment.
 
@@ -347,7 +346,7 @@ Any HTML can be made reactive by passing in a reactor:
 </html>
 ```
 
-## Adding Event Handlers
+## Adding Event Listeners
 
 You can implement a reactive counter with an `on:click` attribute:
 
@@ -405,7 +404,7 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 </html>
 ```
 
-Finally, you can add event handlers to multiple HTML elements with a single call:
+Finally, you can add event listeners to multiple HTML elements with a single call:
 
 `addEventListeners(component,listeners={})` - `component` can be a function returning an `HTMLElement` or an actual `HTMLElement`.
 
@@ -432,7 +431,7 @@ The `listeners` object can have the following:
 }
 ```
 
-These will be registered as the respective event handlers for the event types on the component.
+These will be registered as the respective event listeners for the event types on the component.
 
 3) property functions named using the normal `on<fname>` approach, e.g. `onclick`:
 
@@ -443,7 +442,7 @@ These will be registered as the respective event handlers for the event types on
 }
 ```
 
-These will be registered as the respective event handlers for the event types on the component.
+These will be registered as the respective event listeners for the event types on the component.
 
 4) arbitrary property functions, e.g.
 
@@ -455,33 +454,96 @@ These will be registered as the respective event handlers for the event types on
 
 These will replace attributes of the form `onclick="hcx.myfunction(event)"` on the component.
 
-
-
-
 ## Attribute Directives
 
 ### h-foreach
 
+If an element has an attribute `h-foreach` with a value that can be parsed as an array, e.g. [1,2,3] or ${(() => return [1,2,3])()}, then the
+child elements will be repeated using each value in the array as a model of the form `{currentValue,index,array}`.
+
 ### h-forvalues
+
+If an element has an attribute `h-forvalues` with a value that can be parsed as an object, e.g. {a:1,b:2,c:3} or ${(() => return {a:1,b:2,c:3})()}, then the
+child elements will be repeated using each value in the array as a model of the form `{currentValue,index}`.
 
 ### h-forentries
 
+If an element has an attribute `h-forentries` with a value that can be parsed as an object, e.g. {a:1,b:2,c:3} or ${(() => return {a:1,b:2,c:3})()}, then the
+child elements will be repeated using each value in the array as a model of the form `{entry,index,entries}` where `entry` has the form `[key,value]`.
+
 ### h-forkeys
+
+If an element has an attribute `h-forkeys` with a value that can be parsed as an object, e.g. {a:1,b:2,c:3} or ${(() => return {a:1,b:2,c:3})()}, then the
+child elements will be repeated using each value in the array as a model of the form `{currentValue,index,array}` where `currentValue` is the current key
+and `array` is the Array of keys.
 
 ### Custom Directives
 
-There are two core custom directives, but you can add your own. TO BE WRITTEN.
+Custom directives can be added using `hcx.directive(f,attributeName="h-"+f.name)` where `f` processes the directive. 
+
+The value of `f` should be a function with the call signature `({node,model,name,value,extras})`. If `f` is anonymous, then the desired attribute name must be
+provided when calling `hcx.directive`.
+
+At rendering time,
+
+1) `node` will be the currently rendering DOM node. Available on the node will be the property `originalChildren`, which will be the value of
+`childNodes` the first time the DOM node was encountered.
+
+2) `model` will be the current model. You can update the `model`, but if the attribute values are purely for rendering logic, you should add them
+to `extras` instead.
+
+3) `name` will be the name of the attribute.
+
+4)  `value` will be the resolved value of the attribute. 
+
+5) `extras` is at object you can safely add keys to for handling rendering logic.
+
+Typically, 
+
+1) The directive should handle all processing and not return a value. If the directive returns `true`, then HCX will assume that child elements still need
+to be processed.
+
+2) The directive only needs to call `await await hcx.render(child,model,undefined,false,Object.assign(extras,extra))`.
+
+If the custom directive returns a Promise, it will be awaited.
+
+`h-foreach` is implemented as a custom directive:
+
+```javascript
+async ({node,model,name,value,extras}) => {
+	while(node.lastChild) {
+		node.removeChild(node.lastChild); // remove all previous children
+	}
+	let index = 0;
+	const array = value;
+	for(let currentValue of array) {
+		for(let child of node.originalChildren) {
+			// make sure to clone and not use the original nodes
+			child = child.cloneNode(true);
+			// forevery, forkeys, etc are all converetd to foreach, so fake the model properties to be appropriate
+			const extra = {currentValue,index,array,entry:currentValue,entries:array,value:currentValue}
+			child = await hcx.render(child,model,undefined,false,Object.assign(extras,extra));
+			node.appendChild(child);
+		}
+		index ++;
+	}
+}
+```
+
+### Custom Elements
+
+There are two core custom elements `<hcx-include-element>` and `<hcx-router>`, but you can [add your own](#adding-custom-elements).
 
 ## Core Custom Elements
 
 ### hcx-include-element
 
-Just put `<hcx-include-element for="<css selector>"></hcx-include-element>` in your document and the content of the element selected by `for`
-will be inserterd inside the tags.
+Just include the module `hcx-include-element.js`, then put `<hcx-include-element for="<css selector>"></hcx-include-element>` in your document 
+and the content of the element selected by `for` will be inserterd inside the tags.
 
 ### hcx-router
 
-Include the module `hcx-router.html`.
+Include the module `hcx-router.html` and use any of the configurations below.
 
 `<hcx-router [path="<string or RegExp>" [, target="<css selector>" [, to="<css selector for content>"]]]>`
 
@@ -504,20 +566,23 @@ starts with a `/` and can be converted into a RegExp, that will be used to broad
 
 #### Parameterized Routes
 
-If the `path` attribute contains parameters, e.g. `/user/:id`, or a query string, the parameters will be parsed and used as the data model
+If the `path` attribute contains parameters, e.g. `user/:id`, or a query string, the parameters will be parsed and used as the data model
 during the rendering process.
 
 #### Route Content
 
-If you specificy a CSS selector for the `href` attribute, the content of the first element matching the selector will be
+If you specificy a CSS selector for the `to` attribute, the content of the first element matching the selector will be
 used as the content of a shadow DOM in the target area. A shadow DOM is used so that if the source contains `<style>` elements,
 they will not polute the rest of the document.
 
 #### Remote Content
 
-If the `href` attribute value does not result in the matching of an HTML element, an attempt is made to convert the value to a URL and
+If the `to` attribute value does not result in the matching of an HTML element, an attempt is made to convert the value to a URL and
 retrieve the file at the URL. If the file can be retrieved and successfully parsed as HTML with a body, the body is used. If it
 is HTML without a body, then all the HTML is used.
+
+If the attribute `execute` is "true" and the remote body contains scripts, they will be executed in order. If they are dependent on scripts 
+in a remote head, errors will be logged but not interrupt the flow for the rest of the scripts.
 
 The use of remote content is ideal for micro-UI design. Each element of the UI can be designed and previewed in its own HTML file with its own styling.
 
@@ -538,13 +603,58 @@ You can add an event listener to a route:
 const router = document.querySelector(<route css selector>);
 router.addEventListener("route",(event) => { // if you make this async, event.preventDefault() will not work
 	const {selector,targets} = event;
-	// event.preventDefault(); // call this if your event handler actually does the routing
+	// event.preventDefault(); // call this if your event listener actually does the routing
 	// selector = css selector or perhaps a path to get content based on route definition
 	// targets = the DOM elements to update based on route definition
-	... some logic, perhaps to retrieve remote content
+	... some logic, perhaps to retrieve remote content and then call hcx.render with targets
 });
 
 ```
+
+### Adding Custom Elements
+
+Custom elements can be added using the function:
+
+`hcx.customElement(tagName,component,{observed=[],callbacks={},properties={},extend={},defaultModel={},modelArgIndex=0,bound,listeners,reactiveObserved,shadow=true}={})`
+
+`tagName` - Per industry standard must include at least one `-`. Can be mixed case to support camel casing the component class that is created, e.g.
+`HCX-include` creates a class called `HCXInclude`. However, per industry standard the actual HTML tag will be single case, e.g. `hcx-include`.
+
+`component` - A string, or HTML Element, or function returning an HTML Element to use for the definition. It can also be `null` or `undefined`, in which
+case a container element is created such that all inner HTML is preserved at rendering time. This allows the use of custom elements for purely
+stylistic and UI funcation purposes. See `examples/container.html`.
+
+`observed` - Attributes to be observed per [industry standard for the `attributeChangedCallback`](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#Using_the_lifecycle_callbacks).
+
+`callbacks` - Industry standard callbacks without the suffix `Callback`, e.g.
+
+```javascript
+{
+	connected() { ... },
+	disconnected() { ... },
+	adopted() { ... },
+	attributeChanged() { ... }
+}
+```
+
+Default handlers are provided, so you do not have to create all of them.
+
+`properties` - Any additional data or functional properties to add to the prototype for the generated element
+
+`extend` - TO BE WRITTEN
+
+`defaultModel` - The default model to use for the customElement. This allows partial models to be provided at rendering time.
+
+`modelArgIndex` - The inded of the 'model` in the arguments to `component` at runtime.
+
+`bound` - Set to `true` if the rendered element should automatically bind `model` properties to inputs.
+
+`listeners` - Event listeners. See [addEventListeners](#adding-event-listeners).
+
+`reactiveObservered` - Set to `true` if you want to automatically re-render anytime an observed attribute changes. You can still provide an 
+`attributeChanged` callback and rendering whill be done when it returns.
+
+`shadow` - Use the shadow DOM for the child content. Defaults to `true`.
 
 # Notes
 
@@ -552,16 +662,18 @@ There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
 
-2020-01-28 v0.0.07 ALPHA - Micro-UI design support. `addEventListeners` improvements.
+2020-01-30 v0.0.8 BETA - Feature complete. 98% documentation complete.
 
-2020-01-28 v0.0.06 ALPHA - Documentation updates. Remote and parameterized routes added.
+2020-01-28 v0.0.7 ALPHA - Micro-UI design support. `addEventListeners` improvements.
 
-2020-01-27 v0.0.05 ALPHA - Documentation updates
+2020-01-28 v0.0.6 ALPHA - Documentation updates. Remote and parameterized routes added.
 
-2020-01-27 v0.0.04 ALPHA - Documentation updates
+2020-01-27 v0.0.5 ALPHA - Documentation updates
 
-2020-01-27 v0.0.03 ALPHA - Added routeless router and model exports upon creation
+2020-01-27 v0.0.4 ALPHA - Documentation updates
 
-2020-01-27 v0.0.02 ALPHA - Added `<hcx-include-element>` and `<hcx-router>`. Various bug fixes.
+2020-01-27 v0.0.3 ALPHA - Added routeless router and model exports upon creation
+
+2020-01-27 v0.0.2 ALPHA - Added `<hcx-include-element>` and `<hcx-router>`. Various bug fixes.
 
 2020-01-24 v0.0.01 ALPHA - Initial release

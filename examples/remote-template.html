@@ -9,6 +9,9 @@
 		const loaded = () => {
 			document.body.appendChild(new Text("PREVIEW MODE"))
 		}
+		const catchMe = () => {
+			alert("You failed!")
+		}
 	</script>
 	</head>
 	<body onload="loaded(event)">
@@ -18,5 +21,7 @@
 			}
 		</style>
 		<div>I was loaded from a remote file with a style tag &lt;style>div { font-size: 150% }&lt;/style></div>
+		<script>alert("remote script executed locally")</script>
+		<script>catchMe()</script>
 	</body>
 </html>

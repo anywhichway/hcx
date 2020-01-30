@@ -16,15 +16,19 @@ AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 const DIRECTIVES = {
 		"h-foreach": async ({node,model,name,value,extras}) => {
 			while(node.lastChild) {
-				node.removeChild(node.lastChild);
+				node.removeChild(node.lastChild); // remove all previous children
 			}
 			let index = 0;
 			const array = value;
 			for(let currentValue of array) {
-				let child = node.originalChild.cloneNode(true);
-				const extra = {currentValue,index,array,entry:currentValue,entries:array,value:currentValue}
-				child = await render(child,model,undefined,false,Object.assign(extras,extra));
-				node.appendChild(child);
+				for(let child of node.originalChildren) {
+					// make sure to clone and not use the original nodes
+					child = child.cloneNode(true);
+					// forevery, forkeys, etc are all converetd to foreach, so fake the model properties to be appropriate
+					const extra = {currentValue,index,array,entry:currentValue,entries:array,value:currentValue}
+					child = await hcx.render(child,model,undefined,false,Object.assign(extras,extra));
+					node.appendChild(child);
+				}
 				index ++;
 			}
 		}
@@ -34,7 +38,7 @@ const asDOM = hcx.asDOM = (value) => {
 	let node = parser.parseFromString(value,"text/xml"); // allows parsing of invalid hmtl sub-fragments like <tbody> without <table>
 	const err = node.querySelector("parsererror");
 	if(err) {
-		console.warn(err.innerText,value);
+		//console.warn(err.innerText,value);
 		node = parser.parseFromString(value,"text/html");
 	} else {
 		node = XMLtoHTML(node);
@@ -126,10 +130,19 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 		throw new TypeError("hcx.render expects a DOM Node as the first argument")
 	}
 	if(target) {
-		const html = node.innerHTML,
+		const html = node.tagName==="TEMPLATE" ? node.innerHTML : node.outerHTML,
 		body = parser.parseFromString(`<body>${html}</body>`,"text/html").body;
 		body.normalize();
-		let count  = 0;
+		let count  = 0,
+			attributes;
+		if(node.tagName==="TEMPLATE") {
+			const el = body.firstElementChild;
+			if(el) {
+				attributes = [].slice.call(el.attributes).reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum;},{});
+			}
+		} else {
+			attributes = [].slice.call(node.attributes).reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum;},{});
+		}
 		const max = target.childNodes.length;
 		if(shadow) {
 			while(target.lastChild) {
@@ -152,10 +165,12 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 		while(body.firstChild) {
 			target.appendChild(body.firstChild)
 		}
-		for(const attribute of node.attributes) {
-			if(attribute.name!=="id" && !target.attributes[attribute.name]) {
-				target.setAttribute(attribute.name,attribute.value);
-			}
+		if(target.attributes) {
+			Object.keys(attributes).forEach((key) => {
+				if(key!=="id" && !target.attributes[key]) {
+					target.setAttribute(key,attributes[key]);
+				}
+			})
 		}
 		node = target;
 	}
@@ -187,7 +202,8 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 					}
 				} else if(attribute.originalContent || attribute.value.includes("${") || /\{.*\}/g.test(attribute.value) || /\[.*\]/g.test(attribute.value)) {
 					attribute.originalContent || (attribute.originalContent = attribute.value);
-					let value = (await resolve({node,text:attribute.originalContent,model,extras,hcx})).wholeText.trim();//await Function("hcx","model","extras","with(model) { with(extras) { return hcx`" + attribute.originalContent + "` } }")(hcx,model,extras);
+					let value = (await resolve({node,text:attribute.originalContent,model,extras,hcx}));
+					value = value instanceof Text ? value.wholeText.trim() : value.innerHTML;//await Function("hcx","model","extras","with(model) { with(extras) { return hcx`" + attribute.originalContent + "` } }")(hcx,model,extras);
 					try {
 						value = JSON.parse(value);
 					} catch(e) {
@@ -195,7 +211,12 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 					}
 					if(name.startsWith(":")) {
 						name = name.substring(1);
-						if(value) {
+						if(name[0]==="$") {
+							name = name.substring(1);
+							if(value!=="") {
+								node.setAttribute(name,value);
+							}
+						} else if(value) {
 							node.setAttribute(name,"");
 						} else {
 							node.removeAttribute(name);
@@ -216,7 +237,7 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 						}
 						const directive = DIRECTIVES[name];
 						if(directive) {
-							node.originalChild || (node.originalChild = node.firstElementChild);
+							node.originalChildren || (node.originalChildren = [].slice.call(node.childNodes));
 							directives.push(directive.bind(null,{node,model,name,value,extras}))
 						}
 					}
@@ -260,7 +281,7 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 				if(value instanceof Text) {
 					node.data = value.wholeText;
 				} else {
-					node.parentElement.replaceChild(value,node);
+					node.parentNode.replaceChild(value,node);
 					node.replacementNode = value;
 				}
 			}
@@ -322,7 +343,7 @@ const addEventListenersAux = (el,listeners) => {
 		const handler = listeners[key],
 		type = typeof(handler);
 		if(handler && type==="object") {
-			if(key==="on") {
+			if(key.startsWith("on")) {
 				Object.keys(handler).forEach((event) => {
 					el.addEventListener(event,handler[event]);
 				})
@@ -334,7 +355,7 @@ const addEventListenersAux = (el,listeners) => {
 				}
 			}
 		} else if(type==="function" && key.startsWith("on")) {
-			const ename = key.substring("3");
+			const ename = key.substring(2);
 			el.addEventListener(ename,handler);
 		}
 	})
@@ -549,7 +570,7 @@ const customElement = hcx.customElement = (tagName,component,{observed=[],callba
 		const _component = component;
 		component = () => _component;
 	}
-	if(typeof(component)!=="function") {
+	if(component && typeof(component)!=="function") {
 		throw new TypeError("Second argument to hcx.customElement must be a function or HTMLElement");
 	}
 	_customElement.component = component;
@@ -564,10 +585,10 @@ const customElement = hcx.customElement = (tagName,component,{observed=[],callba
 			_model = model||_model;
 			model = createModel(model||_model,{imports:observed,exports:observed},defaultModel);
 			args[modelArgIndex] = model;
-			if(shadow && !this.shadowRoot) {
+			if(_component && shadow && !this.shadowRoot) {
 				this.attachShadow({mode: 'open'});
 			}
-			return render(_component(...args),model,this.shadowRoot);
+			return render(_component ? _component(...args) : this,model,_component ? this.shadowRoot : undefined);
 		}
 		if(bound) {
 			component = bind(component,modelArgIndex);

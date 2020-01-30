@@ -1,6 +1,6 @@
 import {hcx} from "./index.js";
 
-const recompile = async (target,source,model) => {
+const recompile = async (target,source,model,execute) => {
 	const div = document.createElement("div");
 	div.innerHTML = source.innerHTML;
 	source = await hcx.compile(div,model)();
@@ -11,11 +11,32 @@ const recompile = async (target,source,model) => {
 		target.attachShadow({mode: 'open'});
 	}
 	target = target.shadowRoot;
-	while(target.lastChild) {
-		target.removeChild(target.lastChild);
-	}
-	while(source.lastChild) {
-		target.appendChild(source.lastChild);
+	if(target.innerHTML!==source.innerHTML) {
+		while(target.lastChild) {
+			target.removeChild(target.lastChild);
+		}
+		while(source.firstChild) {
+			target.appendChild(source.firstChild);
+		}
+		if(execute) {
+			const scripts = target.querySelectorAll("script")||[];
+			for(const script of scripts) {
+				const type = source.getAttribute("type")||"text/javascript",
+					src = source.getAttribute("src");
+				if(src) {
+					const child = document.createElement("script");
+					child.setAttribute("type",type);
+					child.setAttribute("src",src);
+					script.parentNode.replaceChild(child,script);
+				} else if(type.includes("javascript")) {
+					try {
+						Function(script.innerText)();
+					} catch(e) {
+						console.error(e)
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -97,9 +118,11 @@ function createRouter() {
 			}
 			if(!path || matched) {
 				const defaultselector = location.hash.includes("?") ? location.hash.substring(0,location.hash.indexOf("?")) : location.hash,
-					selector = hcxRouter.attributes.href ? hcxRouter.attributes.href.value : defaultselector,		
-					revent = new Event("route");
-				Object.assign(revent,{selector,targets:[].slice.call(elements)});
+					selector = hcxRouter.attributes.to ? hcxRouter.attributes.to.value : defaultselector,
+					execute = hcxRouter.getAttribute("execute"),
+					revent = new Event("route"),
+					targets = [].slice.call(elements);
+				Object.assign(revent,{selector,targets});
 				hcxRouter.dispatchEvent(revent);
 				if(!revent.defaultPrevented) {
 					let source;
@@ -115,24 +138,31 @@ function createRouter() {
 						;
 					}
 					if(!source && selector[0]!=="#") {
-						(async () => {
-							try {
-								const href = new URL(selector,document.baseURI).href,
-									file = await fetch(href),
-									text = await file.text();
-								source = hcx.asDOM(text);
-							} catch(e) {
-								console.warn(`valid source ${location.hash} is not available for route`);
-								return;
-							}
-							if(source) {
-								for(const target of elements) {
-									recompile(target,source.body||source,model);
+						try {
+							const href = new URL(selector,document.baseURI).href;
+							(async () => {
+								try {
+									const file = await fetch(href),
+										text = await file.text(),
+										dom = hcx.asDOM(text),
+										body = dom.querySelector("body"),
+										head = dom.querySelector("head");
+								source = body ? body : (!head ? dom : null);	
+								} catch(e) {
+									console.warn(`valid source ${location.hash} is not available for route`);
+									return;
 								}
-							} else {
-								console.warn(`valid source ${location.hash} is not available for route`)
-							}
-						})()
+								if(source) {
+									for(const target of targets) {
+										recompile(target,source,model,execute==="true");
+									}
+								} else {
+									console.warn(`valid source ${location.hash} is not available for route`)
+								}
+							})()
+						} catch(e) {
+							console.warn(`valid source ${location.hash} is not available for route`);
+						}
 					}
 				}
 			}
