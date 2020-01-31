@@ -368,8 +368,9 @@ const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listene
 							src = script.getAttribute("src");
 						if(src) {
 							const child = document.createElement("script");
-							child.setAttribute("type",type);
-							child.setAttribute("src",src);
+							for(const attribute of script.attributes) {
+								child.setAttribute(attribute.name,attribute.value);
+							}
 							script.parentNode.replaceChild(child,script);
 						} else if(type.includes("javascript")) {
 							try {

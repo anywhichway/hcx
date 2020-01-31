@@ -101,7 +101,7 @@ Sub-nodes and attributes can also be targetted:
 ## Templates and Remote Content
 <a id="runnable-templates"></a>
 Templates with encapsulated styles can be compiled and rendered at a later time with new model data. They can optionally be runnable by including the `runnable` flag at compile time and scripts in their definition.
-And, an instruction can be provided to use the shadow DOM. In fact, you can actually compile any DOM element, but style and script management get a little tricky.
+And, an instruction can be provided to use the shadow DOM. By default it is true. It is shown here just for an example. You can actually compile any DOM element, but style and script management get a little tricky.
 
 ```html
 <html>
@@ -665,6 +665,8 @@ Default handlers are provided, so you do not have to create all of them.
 There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
+
+2020-02-01 v0.0.10 BETA - Fixed issue with remote scripts not getting attributes.
 
 2020-01-31 v0.0.9 BETA - Runnable templates support the same as executable route destinations added.
 

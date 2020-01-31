@@ -1,0 +1,24 @@
+<html>
+	 <body>
+	 	<script type="module" src="../hcx-router.js"></script>
+	  	<template id="panelOne">
+		  <div>This is panel one.</div>
+	  	</template>
+	  	<template id="panelTwo">
+		  <div>This is panel two.</div>
+		  <script>alert("You have entered panel two.")</script>
+	  	</template>
+		<a href="#dashboard1/panelOne">Show Panel One</a> &nbsp;
+		<a href="#dashboard2/panelTwo">Show Panel Two</a>
+		<div>
+  			<div>Dashboard One</div>
+  			<div id="dashOne"></div>
+		</div>
+		<div>
+  			<div>Dashboard Two</div>
+  			<div id="dashTwo"></div>
+		</div>
+		<hcx-router path="dash1/:$to" target="#dashOne" runnable="true"></hcx-router>
+		<hcx-router path="dash2/:$to" target="#dashTwo" runnable="true"></hcx-router>
+	</body>
+</html>

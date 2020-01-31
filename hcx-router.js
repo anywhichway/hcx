@@ -1,6 +1,6 @@
 import {hcx} from "./index.js";
 
-const recompile = async (target,source,model,execute) => {
+const recompile = async (target,source,model,runnable) => {
 	const div = document.createElement("div");
 	div.innerHTML = source.innerHTML;
 	source = await hcx.compile(div,model)();
@@ -16,18 +16,16 @@ const recompile = async (target,source,model,execute) => {
 			target.removeChild(target.lastChild);
 		}
 		while(source.firstChild) {
-			target.appendChild(source.firstChild);
-		}
-		if(execute) {
-			const scripts = target.querySelectorAll("script")||[];
-			for(const script of scripts) {
+			let child = source.firstChild;
+			if(child.tagName==="script" && runnable) {
 				const type = script.getAttribute("type")||"text/javascript",
 					src = script.getAttribute("src");
 				if(src) {
-					const child = document.createElement("script");
-					child.setAttribute("type",type);
-					child.setAttribute("src",src);
-					script.parentNode.replaceChild(child,script);
+					const script = document.createElement("script");
+					for(const attribute of child.attributes) {
+						script.setAttribute(attribute.name,attriubte.value);
+					}
+					child = script;
 				} else if(type.includes("javascript")) {
 					try {
 						Function(script.innerText)();
@@ -36,6 +34,7 @@ const recompile = async (target,source,model,execute) => {
 					}
 				}
 			}
+			target.appendChild(child);
 		}
 	}
 }
@@ -65,6 +64,7 @@ function createRouter() {
 					;
 				}
 			}
+			let to;
 			if(path && !isregexp) {
 				const pathparts = path.split("/"),
 					fakeurl = new URL(hash,document.baseURI),
@@ -79,6 +79,7 @@ function createRouter() {
 						hashpart = hashparts.shift();
 						matched = true;
 					} else if(pathpart[0]===":") {
+						const key = pathpart.substring(1);
 						model || (model = {});
 						let value = hashpart;
 						try {
@@ -86,7 +87,11 @@ function createRouter() {
 						} catch(e) {
 							;
 						}
-						model[pathpart.substring(1)] = value;
+						if(key==="$to") {
+							to = `#${value}`;
+						} else {
+							model[key] = value;
+						}
 						pathpart = pathparts.shift();
 						hashpart = hashparts.shift();
 						matched = true;
@@ -117,9 +122,9 @@ function createRouter() {
 				}
 			}
 			if(!path || matched) {
-				const defaultselector = location.hash.includes("?") ? location.hash.substring(0,location.hash.indexOf("?")) : location.hash,
+				const defaultselector = to || (location.hash.includes("?") ? location.hash.substring(0,location.hash.indexOf("?")) : location.hash),
 					selector = hcxRouter.attributes.to ? hcxRouter.attributes.to.value : defaultselector,
-					execute = hcxRouter.getAttribute("execute"),
+					runnable = hcxRouter.getAttribute("runnable"),
 					revent = new Event("route"),
 					targets = [].slice.call(elements);
 				Object.assign(revent,{selector,targets});
@@ -154,7 +159,7 @@ function createRouter() {
 								}
 								if(source) {
 									for(const target of targets) {
-										recompile(target,source,model,execute==="true");
+										recompile(target,source,model,runnable==="true");
 									}
 								} else {
 									console.warn(`valid source ${location.hash} is not available for route`)
