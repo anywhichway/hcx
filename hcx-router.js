@@ -21,8 +21,8 @@ const recompile = async (target,source,model,execute) => {
 		if(execute) {
 			const scripts = target.querySelectorAll("script")||[];
 			for(const script of scripts) {
-				const type = source.getAttribute("type")||"text/javascript",
-					src = source.getAttribute("src");
+				const type = script.getAttribute("type")||"text/javascript",
+					src = script.getAttribute("src");
 				if(src) {
 					const child = document.createElement("script");
 					child.setAttribute("type",type);

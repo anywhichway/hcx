@@ -28,6 +28,8 @@ HCX lets you set [`debugger` points](#debugging) directly in your HTML template 
 
 HCX supports [industry standard](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements) [Custom HTML Elements](#custome-elements). In fact, you can turn any HTMLElement DOM node into a Custom HTML Element.
 
+HCX introduces the concept of [runnable templates](#runnable-templates).
+
 HCX includes two custom elements: [`<hcx-include-element>`](#hcx-include-element) and [`<hcx-router>`](#hcx-router). The router can target any DOM node as a destination and sources its content from
 any other DOM node or a remote file. It can also use a RegExp for pattern matching routes. There can be multiple routers on the same page. In fact, multiple routers
 can respond to the same `hashchange` events. You can even have a routeless router, <hcx-router></hcx-router>, which will replace its own content with
@@ -97,8 +99,8 @@ Sub-nodes and attributes can also be targetted:
 ```
 
 ## Templates and Remote Content
-
-Templates with encapsulated styles can be compiled and rendered at a later time with new model data:
+<a id="runnable-templates"></a>
+Templates with encapsulated styles can be compiled and rendered at a later time with new model data. They can optionally be runnable by including the `runnable` flag at compile time and script sin their definition.
 
 ```html
 <html>
@@ -107,7 +109,7 @@ Templates with encapsulated styles can be compiled and rendered at a later time 
 		<script>
 			const loaded = () => {
 				const el = document.getElementById("mytemplate"),
-					compiled = hcx.compile(el)();
+					compiled = hcx.compile(el,null,{runnable:true})();
 				setTimeout(() => {
 					const shadow = true;
 					compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"),shadow)
@@ -120,7 +122,9 @@ Templates with encapsulated styles can be compiled and rendered at a later time 
 					font-size: 150%
 				}
 			</style>
+			<script src="./mytemplate.js"></script>
 			<div date="${date}">${message}</div>
+			<script>console.log("mytemplate was rendered")</script>
 		</template>
 	</head>
 	<body onload="loaded(event)">
@@ -661,6 +665,8 @@ Default handlers are provided, so you do not have to create all of them.
 There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
+
+2020-01-31 v0.0.9 BETA - Runnable templates support the same as executable route destinations added.
 
 2020-01-30 v0.0.8 BETA - Feature complete. 98% documentation complete.
 

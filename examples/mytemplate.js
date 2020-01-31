@@ -1,0 +1,1 @@
+console.log("mytemplate support file loaded")

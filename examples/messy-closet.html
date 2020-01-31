@@ -31,13 +31,11 @@ window.addEventListener("DOMContentLoaded",() => {
 
 	setTimeout(() => myModel.tableConfig.header = "Your Table",500);
 	
-	const loop = hcx.compile(document.getElementById("loop"));
+	const loop = hcx.compile(document.getElementById("loop"),{},{properties:{beforeRender() { console.log("before"); }}});
 	loop();
 
 	const content = hcx.compile(document.getElementById("content"));
-	hcx.bind(content)(myModel,document.getElementById("app")).then((el) => {
-		console.log(el,el.rows);
-	})
+	hcx.bind(content)(myModel,document.getElementById("app"));
 
 	const modeled = hcx.compile(document.getElementById("modeled")),
 		person = hcx.model({},{exports:["firstname"],reactive:true})
@@ -106,11 +104,11 @@ window.addEventListener("DOMContentLoaded",() => {
 </div>
 
 <hcx-include-element for="#included" style="font-size:200%"></hcx-include-element>
-<ul id="loop" h-foreach="[1,2,3]"><li>${currentValue} ${index} ${JSON.stringify(array)}</li></ul>
+<ul h-transition="${{before:'beforeRender'}}" id="loop" h-foreach="[1,2,3]"><li>${currentValue} ${index} ${JSON.stringify(array)}</li></ul>
 
 <div id="modeled" firstname="joe">${firstname}</div>
 
 <table-element id="testtable" header="test header"></table-element>
 <div id="app"></div>
-</body>
+
 </html>

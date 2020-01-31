@@ -31,6 +31,11 @@ const DIRECTIVES = {
 				}
 				index ++;
 			}
+		},
+		"h-transition": ({node,value,extras}) => {
+			const before = node[value.before]||extras[value.before],
+				after = node[value.after]||extras[value.after];
+			return {before:before ? before.bind(node) : undefined,after: after ? after.bind(node) : undefined};
 		}
 }
 
@@ -53,11 +58,18 @@ function hcxSync(strings,...args) {
 		return args.length>1 ? args : args[0]; // template processing returned DOM nodes
 		//return args;
 	} 
-	const value = strings.reduce((accum,str,i) => i<args.length ? accum += str + (args[i]===undefined ? "" : args[i]) : accum += str,"").trim();
+	const value = strings.reduce((accum,str,i) => i<args.length ? accum += str + (args[i]===undefined ? "" : stringifyObjects(args[i])) : accum += str,"").trim();
 	if(value.startsWith("<") && value.endsWith(">")) {
 		return asDOM(value);
 	}
 	return new Text(value);
+}
+
+function stringifyObjects(value) {
+	if(value && typeof(value)==="object") {
+		return JSON.stringify(value);
+	}
+	return value;
 }
 
 async function resolve({node,text,model,extras,hcx}) {
@@ -175,6 +187,7 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 		node = target;
 	}
 	const directives = [];
+	let directiveresults;
 	if(node.tagName!=="SCRIPT") {
 		node.normalize();
 		document.renderingNode = node;
@@ -191,7 +204,7 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 							node.hcxListeners.add(value);
 							node.addEventListener(eventname,async (event) => {
 								document.renderingNode = node;
-								const newvalue = await resolve({node,text:value,model,extras,hcx});//await Function("hcx","model","extras","with(model) { with(extras) { return hcx`" + value + "` } }")(hcx,model,extras);
+								const newvalue = await resolve({node,text:value,model,extras,hcx});
 								document.renderingNode = null;
 								node.setAttribute(attribute.name,newvalue.wholeText);
 								if(typeof(node[name])==="function") {
@@ -203,7 +216,7 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 				} else if(attribute.originalContent || attribute.value.includes("${") || /\{.*\}/g.test(attribute.value) || /\[.*\]/g.test(attribute.value)) {
 					attribute.originalContent || (attribute.originalContent = attribute.value);
 					let value = (await resolve({node,text:attribute.originalContent,model,extras,hcx}));
-					value = value instanceof Text ? value.wholeText.trim() : value.innerHTML;//await Function("hcx","model","extras","with(model) { with(extras) { return hcx`" + attribute.originalContent + "` } }")(hcx,model,extras);
+					value = value instanceof Text ? value.wholeText.trim() : value.innerHTML;
 					try {
 						value = JSON.parse(value);
 					} catch(e) {
@@ -245,26 +258,40 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 			}
 			for(const directive of directives.slice()) {
 				const result = await directive();
-				if(result===true) {
-					directives.pop();
+				if(result && typeof(result)==="object" && !Array.isArray(result)) {
+					directiveresults || (directiveresults=[]);
+					directiveresults.push(result);
 				}
 			}
 		}
-		if(directives.length===0 && node.childNodes && !(node instanceof Text)) {
+		if((!directiveresults || directiveresults.length>0) && node.childNodes && !(node instanceof Text)) {
 			if(node.originalContent) {
-				const value = await resolve({node,text:node.originalContent,model,extras,hcx});//await Function("hcx","model","extras","with(model) { with(extras) { return hcx`" + node.originalContent + "` } }")(hcx,model,extras);
+				const value = await resolve({node,text:node.originalContent,model,extras,hcx});
 				value.originalContent = node.originalContent;
 				value.expandsInstruction = node.expandsInstruction;
 				node.parentElement.replaceChild(value,node);
 				node.replacementNode = value;
 			} else {
+				if(directiveresults) {
+					directiveresults.forEach((directive) => {
+						if(directive.before) {
+							directive.before(node)
+						}
+					})	
+				}
 				for(const child of node.childNodes) {
 					await render(child,model,undefined,false,extras);
 				}
+				if(directiveresults) {
+					directiveresults.forEach((directive) => {
+						if(directive.after) {
+							directive.after(node)
+						}
+					})
+				}
 				document.renderingNode = node;
 			}
-		}
-		if(node instanceof Text) {
+		} else if(node instanceof Text) {
 			if(node.wholeText.includes("${")) {
 				node.originalContent = node.wholeText;
 			}
@@ -273,7 +300,7 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 			}
 			let value = node;
 			if(node.originalContent && node.originalContent.includes("${")) {
-				value = await resolve({node,text:node.originalContent,model,extras,hcx}); //await Function("hcx","model","extras","with(model) { with(extras) { return hcx`" + node.originalContent + "` } }")(hcx,model,extras);
+				value = await resolve({node,text:node.originalContent,model,extras,hcx}); 
 			}
 			if(value!==node) {
 				value.originalContent = node.originalContent;
@@ -285,12 +312,11 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 					node.replacementNode = value;
 				}
 			}
-		}
-		if((node.nodeType===7 || node.nodeType===8) && /[\s\?]?hcx\s.*/.test(node.textContent)) { // if <!--hcx then patch it in after resolution
+		} else if((node.nodeType===7 || node.nodeType===8) && /[\s\?]?hcx\s.*/.test(node.textContent)) { // if <!--hcx then patch it in after resolution
 			const end = node.nodeType===7 ? node.textContent.length-1 : (node.textContent.endsWith("?") ? node.textContent.length-1 : node.textContent.length),
 					start = node.textContent.indexOf("hcx") + 4,
 					text = node.textContent.substring(start,end).trim(),
-					value = await resolve({node,text,model,extras,hcx}); //await Function("hcx","model","extras","with(model) { with(extras) { return hcx`" + text + "` } }")(hcx,model,extras);
+					value = await resolve({node,text,model,extras,hcx});
 			node.instructionId || (node.instructionId=Math.random())
 			for(const child of [].slice.call(node.parentNode.childNodes)) {
 				if(child.expandsInstruction===node.instructionId) {
@@ -312,7 +338,7 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 	return node;
 }
 
-const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listeners,properties,shadow}={}) => {
+const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listeners,properties,shadow,runnable}={}) => {
 	if(el && typeof(el)==="object" && el instanceof HTMLElement) {
 		const f = async (el,_model,target,shadow) => {
 			if(!_model) {
@@ -321,17 +347,38 @@ const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listene
 					_model = createModel(_model,{imports,exports,reactive})
 				}
 			}
-			el = await render(el,_model,target,shadow);
-			if(listeners) {
-				addEventListeners(el,listeners);
-			}
-			if(properties) {
-				hcx.properties(el,properties);
-			}
-			if(inputs) {
-				bind(el,_model,{inputs});
-			}
-			return el;
+			return new Promise((resolve,reject) => {
+				requestAnimationFrame(async () => {
+					const node = await render(el,_model,target,shadow,Object.assign({},properties));
+					if(listeners) {
+						addEventListeners(node,listeners);
+					}
+					if(properties) {
+						hcx.properties(node,properties);
+					}
+					if(inputs) {
+						bind(node,_model,{inputs});
+					}
+					const scripts = node.querySelectorAll("script")||[];
+					for(const script of scripts) {
+						const type = script.getAttribute("type")||"text/javascript",
+							src = script.getAttribute("src");
+						if(src) {
+							const child = document.createElement("script");
+							child.setAttribute("type",type);
+							child.setAttribute("src",src);
+							script.parentNode.replaceChild(child,script);
+						} else if(type.includes("javascript")) {
+							try {
+								Function(script.innerText)();
+							} catch(e) {
+								console.error(e)
+							}
+						}
+					}
+					resolve(node);
+				})
+			})
 		}
 		return f.bind(null,el)
 	}
@@ -408,7 +455,7 @@ const properties = hcx.properties = (component,properties={}) => {
 		}
 	}
 	if(component && type==="object" && component instanceof HTMLElement) {
-		return propertiesAux(components,properties);
+		return propertiesAux(component,properties);
 	}
 	throw new TypeError("First argument to hcx.properties must be a function or HTMLElement");
 }
@@ -646,7 +693,7 @@ const createModel = hcx.model = (object={},{imports=[],exports=[],reactive}={},d
 			if(value==null && typeof(property)==="string" && el && el.getAttribute && imports.includes(property)) {
 				value = el.getAttribute(property);
 				if(value && value.includes("${")) {
-					value = resolve({node:el,text:value,model:proxy,extras:{},hcx:hcxSync}); //Function("hcx","model","with(model) { return hcx`" + value + "` }")(hcxSync,proxy).wholeText;
+					value = resolve({node:el,text:value,model:proxy,extras:{},hcx:hcxSync});
 				}
 				try {
 					value = JSON.parse(value);
@@ -673,7 +720,7 @@ const createModel = hcx.model = (object={},{imports=[],exports=[],reactive}={},d
 							if(doimport || doexport) {
 								let value = attribute.value;
 								if(value && value.includes("${")) {
-									value = resolve({node:el,text:value,model:proxy,extras:{},hcx:hcxSync}); //Function("hcx","model","with(model) { return hcx`" + value + "` }")(hcxSync,proxy).wholeText;
+									value = resolve({node:el,text:value,model:proxy,extras:{},hcx:hcxSync});
 								}
 								try {
 									value = JSON.parse(value);

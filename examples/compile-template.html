@@ -4,7 +4,7 @@
 		<script>
 			const loaded = () => {
 				const el = document.getElementById("mytemplate"),
-					compiled = hcx.compile(el);
+					compiled = hcx.compile(el,null,{runable:true});
 				setTimeout(() => {
 					const shadow = true;
 					compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"),true)
@@ -17,7 +17,9 @@
 					font-size: 150%
 				}
 			</style>
+			<script src="./mytemplate.js"></script>
 			<div date="${date}">${message}</div>
+			<script>console.log("mytemplate was rendered")</script>
 		</template>
 	</head>
 	<body onload="loaded(event)">
