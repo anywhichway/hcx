@@ -4,10 +4,9 @@
 		<script>
 			const loaded = () => {
 				const el = document.getElementById("mytemplate"),
-					compiled = hcx.compile(el,null,{runable:true});
+					compiled = hcx.compile(el,null,{shadow:true,runable:true});
 				setTimeout(() => {
-					const shadow = true;
-					compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"),true)
+					compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"))
 				})
 			};
 		</script>

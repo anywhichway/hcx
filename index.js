@@ -340,7 +340,10 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 
 const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listeners,properties,shadow,runnable}={}) => {
 	if(el && typeof(el)==="object" && el instanceof HTMLElement) {
-		const f = async (el,_model,target,shadow) => {
+		const f = async (el,_model,target,_shadow) => {
+			if(_shadow===undefined) {
+				_shadow = shadow;
+			}
 			if(!_model) {
 				_model = model;
 				if((imports && imports.length>0) || (exports && exports.length>0) || reactive) {
@@ -349,7 +352,7 @@ const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listene
 			}
 			return new Promise((resolve,reject) => {
 				requestAnimationFrame(async () => {
-					const node = await render(el,_model,target,shadow,Object.assign({},properties));
+					const node = await render(el,_model,target,_shadow,Object.assign({},properties));
 					if(listeners) {
 						addEventListeners(node,listeners);
 					}

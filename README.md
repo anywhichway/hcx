@@ -100,7 +100,8 @@ Sub-nodes and attributes can also be targetted:
 
 ## Templates and Remote Content
 <a id="runnable-templates"></a>
-Templates with encapsulated styles can be compiled and rendered at a later time with new model data. They can optionally be runnable by including the `runnable` flag at compile time and script sin their definition.
+Templates with encapsulated styles can be compiled and rendered at a later time with new model data. They can optionally be runnable by including the `runnable` flag at compile time and scripts in their definition.
+And, an instruction can be provided to use the shadow DOM. In fact, you can actually compile any DOM element, but style and script management get a little tricky.
 
 ```html
 <html>
@@ -109,10 +110,9 @@ Templates with encapsulated styles can be compiled and rendered at a later time 
 		<script>
 			const loaded = () => {
 				const el = document.getElementById("mytemplate"),
-					compiled = hcx.compile(el,null,{runnable:true})();
+					compiled = hcx.compile(el,null,{runnable:true,shadow:true})();
 				setTimeout(() => {
-					const shadow = true;
-					compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"),shadow)
+					compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"))
 				})
 			};
 		</script>
