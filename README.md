@@ -544,8 +544,9 @@ to `extras` instead.
 
 Typically, 
 
-1) The directive should handle all processing and not return a value. If the directive returns `true`, then HCX will assume that child elements still need
-to be processed.
+1) The directive should handle all processing and not return a value. If the directive returns an object, then HCX will assume that child elements still need
+to be processed. If the directive returns an object with the properties `before` or `after`, the functions stored on those properties will be called with the currently
+processing node as both the first argument and the `this` context.
 
 2) The directive only needs to call `await await hcx.render(child,model,undefined,false,Object.assign(extras,extra))`.
 
@@ -705,6 +706,10 @@ Default handlers are provided, so you do not have to create all of them.
 There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
+
+2020-02-01 v0.0.13 BETA - Documentation updates.
+
+2020-02-01 v0.0.12 BETA - Documentation updates.
 
 2020-02-01 v0.0.11 BETA - Modified tag line. Documentation updates.
 
