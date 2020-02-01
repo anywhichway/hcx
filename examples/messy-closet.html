@@ -1,11 +1,11 @@
 <html>
 <head>
-<script type="module" src="../index.js" sync></script>
+<script type="module" src="../hcx.js" sync></script>
 <script type="module" src="../hcx-include-element.js"></script>
 <script type="module" src="../hcx-router.js"></script>
 <script>
 window.addEventListener("DOMContentLoaded",() => {
-	const hcx = window.hcx;
+	//const hcx = window.hcx;
 
 	let Table = ({header="",headings=[],rows=[]}) => {
 		const cols = Math.max(headings.length,rows.reduce((accum,row) => accum = Math.max(accum,row.length),0));

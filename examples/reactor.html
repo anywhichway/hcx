@@ -1,10 +1,10 @@
 <html>
 	<head>
-		<script type="module" src="../index.js"></script>
+		<script type="module" src="../hcx.js"></script>
 		<script>
 			const loaded = () => {
-				const reactive = hcx.reactor({message:"Wait for it ...."});
-				hcx.compile(document.body,reactive)();
+				const reactor = hcx.reactor({message:"Wait for it ...."});
+				hcx.compile(document.body,reactor)();
 				setTimeout(() => reactive.message="Hello World!",2000);
 			}
 		</script>

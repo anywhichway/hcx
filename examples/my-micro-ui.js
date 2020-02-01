@@ -1,1 +1,1 @@
-alert("javascript loaded fro mymodule")
+alert("javascript loaded from mymodule")

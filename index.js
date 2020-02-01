@@ -338,7 +338,7 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 	return node;
 }
 
-const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listeners,properties,shadow,runnable}={}) => {
+const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listeners,properties,shadow=true,runnable}={}) => {
 	if(el && typeof(el)==="object" && el instanceof HTMLElement) {
 		const f = async (el,_model,target,_shadow) => {
 			if(_shadow===undefined) {
@@ -594,13 +594,13 @@ const bind = hcx.bind = (component,modelOrModelArgIndex=0,{inputs="*",imports,ex
 				args[modelOrModelArgIndex] = _model;
 			}
 			const el = await component(...args);
-			if(el && typeof(el)==="object" && el instanceof HTMLElement) {
+			if(el && typeof(el)==="object" && (el instanceof HTMLElement || el instanceof DocumentFragment)) {
 				return bindAux(el,_model,{inputs});
 			}
 			throw new TypeError("component function must return an HTMLElement for bind");
 		}
 	}
-	if(component && type==="object" && component instanceof HTMLElement) {
+	if(component && type==="object" && (component instanceof HTMLElement || component instanceof DocumentFragment)) {
 		return bindAux(component,modelOrModelArgIndex,{inputs})
 	}
 	throw new TypeError("First argument to hcx.bind must be a function or HTMLElement");

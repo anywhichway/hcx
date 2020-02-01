@@ -68,7 +68,7 @@ In the most simple case, a document body can be bound to a model and rendered:
 ```html
 <html>
 	<head>
-	<script type="module" src="../index.js"></script>
+	<script type="module" src="../hcx.js"></script>
 	<script>
 		const loaded = () => hcx.compile(document.body,{message:"Hello World!"})())
 	</script>
@@ -84,7 +84,7 @@ Sub-nodes and attributes can also be targetted:
 ```html
 <html>
 	<head>
-		<script type="module" src="../index.js"></script>
+		<script type="module" src="../hcx.js"></script>
 		<script>
 			const loaded = () => {
 				const el = document.getElementById("themessage");
@@ -98,6 +98,31 @@ Sub-nodes and attributes can also be targetted:
 </html>
 ```
 
+The full signature for compile is:
+
+`hcx.compile(el,model,{imports,exports,reactive,inputs,listeners,properties,shadow,runnable}={})`
+
+`el` - HTML element
+
+`model` - An optional object to use as a data source.
+
+`imports` - An optional array, the values of of which are attributes to copy onto the `model`.
+
+`exports` - An optional array of model keys used to add data properties directly to the element or to set as attribute values.
+
+`reactive` - An optional boolean which if truthy makes the `model` into a reactor such that any time it changes portions of the `el` referencing the changed properties will be re-rendered. See [Reactivity}(#reactivity).
+
+`inputs` - Defaults to '"*"` to bind a all inputs to the `model`. Can also be an array of input ids. See [Binding Inputs](#binding-inputs).
+
+`listeners` - An optional object holding Event listeners to add. See [Adding Event Listeners](#adding-event-listeners).
+
+`properties` - An optional object on data and methods to add directly to `el` when it is rendered.
+
+`shadow` - An optional boolean, defaulting to `true`, which if causes the `innerHTML` to be rendered in a [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_shadow_DOM).
+
+`runnable` - An optional boolean flag which if truthy tells HCX is is OK to re-run scrips that are sub-elements of `el` each time the `el` is rendered.
+
+
 ## Templates and Remote Content
 <a id="runnable-templates"></a>
 Templates with encapsulated styles can be compiled and rendered at a later time with new model data. They can optionally be runnable by including the `runnable` flag at compile time and scripts in their definition.
@@ -106,7 +131,7 @@ And, an instruction can be provided to use the shadow DOM. By default it is true
 ```html
 <html>
 	<head>
-		<script type="module" src="../index.js"></script>
+		<script type="module" src="../hcx.js"></script>
 		<script>
 			const loaded = () => {
 				const el = document.getElementById("mytemplate"),
@@ -141,7 +166,7 @@ For micro-UI design, components can be stored as separate UI files with their ow
 	<head>
 		<!-- 
 			anything in the head will be ignored if the file is loaded as remote content source
-			however, it loaded directly, the head will be used
+			however, if loaded directly, the head will be used
 			perfect for ui component previewing!
 		 -->
 		<script>
@@ -164,7 +189,7 @@ For micro-UI design, components can be stored as separate UI files with their ow
 ```html
 <html>
 	<head>
-		<script type="module" src="../index.js"></script>
+		<script type="module" src="../hcx.js"></script>
 		<script>
 			const loaded = async () => {
 				const file = await fetch("./micro-ui-template.html"),
@@ -195,7 +220,7 @@ Boolean attributes are handled by attributes of the same name prefixed by a `:`:
 ```html
 <html>
 	<head>
-		<script type="module" src="../index.js"></script>
+		<script type="module" src="../hcx.js"></script>
 		<script>
 			const loaded = () => {
 				hcx.compile(document.body,{box1:true,box2:false})();
@@ -217,7 +242,7 @@ assistance:
 ```html
 <html>
   <head>
-    <script type="module" src="../index.js"></script>
+    <script type="module" src="../hcx.js"></script>
 	  <script>
 		  const Table = ({header="",headings=[],rows=[]}) => { // a table that adjusts to its headings and rows
 		    const cols = Math.max(headings.length,rows.reduce((accum,row) => accum = Math.max(accum,row.length),0));
@@ -266,7 +291,7 @@ Arbitrarily complex JavaScript logic can be included by enclosing the script in 
 ```html
 <html>
 	<head>
-		<script type="module" src="../index.js"></script>
+		<script type="module" src="../hcx.js"></script>
 		<script>
 			const loaded = () => {
 				hcx.compile(document.body,{message:"Hello World!"})();
@@ -297,7 +322,7 @@ Arbitrarily complex JavaScript logic can be included by enclosing the script in 
 ```html
 <html>
 	<head>
-		<script type="module" src="../index.js"></script>
+		<script type="module" src="../hcx.js"></script>
 		<script>
 			const loded = () => {
 				hcx.compile(document.body,{message:"Hello World!"})();
@@ -326,20 +351,35 @@ Arbitrarily complex JavaScript logic can be included by enclosing the script in 
 
 ## Binding Inputs
 
-TO BE WRITTEN
+Binding inputs associate sinput elements of type `<input>`, `<textarea>` and `<select>` with a model such that any time they are updated the model is updated. 
+Compiled HTML is automatically bound and passing `bound:true` to `hcx.customElement` or wrapping a component in `hcx.bind` will also bind the inputs.
+
+`hcx.bind(component,modelOrModelArgIndex=0,{inputs="*",imports,exports,reactive}={})`
+
+`component` - An `HTMLElement` or a function returning one.
+
+`modelOrModelArgIndex` - An object or a number representing the argument position of the `model` in the `component` function when called. Defaults to 0.
+
+`inputs` - Defauls to `"*"` for all elements that can take input. It can also be an array on input ids to be more selective.
+
+`imports` - Attributes to add to the model.
+
+`exports` - Keys to export from the model and place on the rendered HTMLElement or update attributes.
+
+`reactive` - Converts the model to a reactive one so that any changes automatically force a re-render of the component.
 
 ## Reactivity
 
-Any HTML can be made reactive by passing in a reactor:
+Any HTML can be made reactive by passing in a reactor. By creating the reactor before calling compile it is available to other functions for updating.
 
 ```html
 <html>
 	<head>
-		<script type="module" src="../index.js"></script>
+		<script type="module" src="../hcx.js"></script>
 		<script>
 			const loaded = () => {
-				const reactive = hcx.reactor({message:"Wait for it ...."});
-				hcx.compile(document.body,reactive)();
+				const reactor = hcx.reactor({message:"Wait for it ...."});
+				hcx.compile(document.body,reactor)();
 				setTimeout(() => reactive.message="Hello World!",2000);
 			}
 		</script>
@@ -357,11 +397,11 @@ You can implement a reactive counter with an `on:click` attribute:
 ```html
 <html>
 	<head>
-		<script type="module" src="../index.js"></script>
+		<script type="module" src="../hcx.js"></script>
 		<script>
 			const loaded = () => {
-				const reactive = hcx.reactor({count:0});
-				hcx.compile(document.body,reactive)();
+				const reactor = hcx.reactor({count:0});
+				hcx.compile(document.body,reactor)();
 			}
 		</script>
 	</head>
@@ -376,7 +416,7 @@ If you do not need to access the reactor outside the context of the HTML, you ca
 ```html
 <html>
 	<head>
-		<script type="module" src="../index.js"></script>
+		<script type="module" src="../hcx.js"></script>
 		<script>
 			const loaded = () => {
 				hcx.compile(document.body,{count:0},{reactive:true)();
@@ -394,7 +434,7 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 ```html
 <html>
 	<head>
-		<script type="module" src="../index.js"></script>
+		<script type="module" src="../hcx.js"></script>
 		<script>
 			const loaded = () => {
 				const reactive = hcx.reactor({count:0});
@@ -666,7 +706,7 @@ There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
 
-2020-02-01 v0.0.11 BETA - Modified tag line.
+2020-02-01 v0.0.11 BETA - Modified tag line. Documentation updates.
 
 2020-01-31 v0.0.10 BETA - Specialized :$to route parameter.
 

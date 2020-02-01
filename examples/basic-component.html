@@ -1,6 +1,6 @@
 <html>
 	<head>
-		<script type="module" src="../index.js"></script>
+		<script type="module" src="../hcx.js"></script>
 		<script>
 			const Table = ({header="",headings=[],rows=[]}) => { // a table that adjusts to its headings and rows
 				const cols = Math.max(headings.length,rows.reduce((accum,row) => accum = Math.max(accum,row.length),0));
