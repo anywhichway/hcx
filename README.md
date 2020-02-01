@@ -1,6 +1,6 @@
 # HCX
 
-HTML compilation and component utility functions for a framework free or framework light UI.
+HTML Compiler - Routeless, targetless, remote, runnable routes and more ...
 
 Core Library:
 
@@ -666,7 +666,9 @@ There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
 
-2020-01-31 v0.0.10 BETA - Sepcialized :$to route parameter.
+2020-02-01 v0.0.11 BETA - Modified tag line.
+
+2020-01-31 v0.0.10 BETA - Specialized :$to route parameter.
 
 2020-01-31 v0.0.10 BETA - Fixed issue with remote scripts not getting attributes.
 

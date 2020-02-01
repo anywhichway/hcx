@@ -1,7 +1,7 @@
 {
   "name": "hcx",
-  "description": "HTML compilation and component utility functions for a framework free or framework light UI.",
-  "version": "0.0.11",
+  "description": "HTML Compiler - Routeless, targetless, remote, runnable routes and more ...",
+  "version": "0.0.12",
   "contributors": [
     {
       "name": "Simon Y. Blackwell",
