@@ -4,6 +4,10 @@ const recompile = async (target,source,model,runnable) => {
 	const div = document.createElement("div");
 	div.innerHTML = source.innerHTML;
 	source = await hcx.compile(div,model)();
+	if(target.tagName==="IFRAME") {
+		target.setAttribute("srcdoc",source.innerHTML)
+		return;
+	}
 	while(target.lastChild) {
 		target.removeChild(target.lastChild);
 	}
