@@ -192,8 +192,12 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 		node.normalize();
 		document.renderingNode = node;
 		if(node.attributes) {
-			for(const attribute of node.attributes) {
-				let name = attribute.name;
+			const anames = Object.keys(Object.getOwnPropertyDescriptors(node.attributes)).filter((key) => isNaN(parseInt(key))); // lets us use technically invalid attribute names like :$<somename>
+			let i = 0;
+			const attributes = anames.map((key) => node.attributes[key]);
+			for(const attribute of attributes) {
+				let name = attribute.name[0]===":" ? anames[i] : attribute.name;
+				i++;
 				if(name.startsWith("on")) {
 					const parts = name.split(":"),
 					eventname = parts.length===2 ? parts[1] : name.substring(2),
@@ -389,40 +393,46 @@ const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listene
 	throw new TypeError("first argument to hcx.compile must be HTMLElement");
 }
 
-const addEventListenersAux = (el,listeners) => {
+const addEventListenersAux = (el,listeners,recursing) => {
+	const attributes = [].slice.call(el.attributes||[]);
 	Object.keys(listeners).forEach((key) => {
 		const handler = listeners[key],
 		type = typeof(handler);
-		if(handler && type==="object") {
+		if(!recursing && handler && type==="object") {
 			if(key.startsWith("on")) {
 				Object.keys(handler).forEach((event) => {
 					el.addEventListener(event,handler[event]);
 				})
 			} else {
+				// add handlers to elements matching key as CSS
 				for(const child of el.querySelectorAll(key)) {
 					Object.keys(handler).forEach((event) => {
 						child.addEventListener(event,handler[event]);
 					})
 				}
 			}
-		} else if(type==="function" && key.startsWith("on")) {
+		} else if(!recursing && type==="function" && key.startsWith("on")) {
 			const ename = key.substring(2);
 			el.addEventListener(ename,handler);
-		}
-	})
-	for(const attribute of [].slice.call(el.attributes)) {
-		if(attribute.name.startsWith("on") && attribute.value.includes("hcx.")) {
-			const ename = attribute.name.startsWith("on:") ? attribute.name.substring(3) : attribute.name.substring(2),
-				value = attribute.value.trim().substring(4),
-				fname = value.substring(0,value.indexOf("("));
-			if(listeners[fname]) {
-				el.addEventListener(ename,(event) => listeners[fname](event));
-				if(!attribute.name.startsWith("on:")) {
-					el.removeAttribute(attribute.name);
+		} else {
+			for(const attribute of attributes) {
+				const handler = attribute.value.trim();
+				if(attribute.name.startsWith("on")  && handler.startsWith(`${key}(`)) {
+					const ename = attribute.name.startsWith("on:") ? attribute.name.substring(3) : attribute.name.substring(2);
+					if(!attribute.name.startsWith("on:")) {
+						el.removeAttribute(attribute.name);
+					}
+					el.addEventListener(ename,(event) => {
+						Function("event","listeners",`listeners.${handler}`).call(event.currentTarget,event,listeners);
+					})
 				}
 			}
+			for(const child of el.children) {
+				addEventListenersAux(child,listeners,true);
+			}
 		}
-	}
+	})
+	
 	return el;
 }
 const addEventListeners = hcx.addEventListeners = (component,listeners={}) => {
@@ -437,8 +447,8 @@ const addEventListeners = hcx.addEventListeners = (component,listeners={}) => {
 			throw new TypeError("component function must return an HTMLElement for hcx.addEventListeners");
 		}
 	}
-	if(component && type==="object" && component instanceof HTMLElement) {
-		return addEventListenersAux(components,listeners);
+	if(component && type==="object" && (component instanceof HTMLElement || component instanceof DocumentFragment)) {
+		return addEventListenersAux(component,listeners);
 	}
 	throw new TypeError("First argument to hcx.addEventListeners must be a function or HTMLElement");
 }

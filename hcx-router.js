@@ -1,13 +1,15 @@
 import {hcx} from "./index.js";
 
 const recompile = async (target,source,model,runnable) => {
+	if(target.tagName==="IFRAME") {
+		target.attributes[":$srcdoc"] || (target.attributes[":$srcdoc"] = document.createAttribute(":srcdoc"));
+		target.attributes[":$srcdoc"].value = source.innerHTML;
+		hcx.compile(target,model)();
+		return;
+	}
 	const div = document.createElement("div");
 	div.innerHTML = source.innerHTML;
 	source = await hcx.compile(div,model)();
-	if(target.tagName==="IFRAME") {
-		target.setAttribute("srcdoc",source.innerHTML)
-		return;
-	}
 	while(target.lastChild) {
 		target.removeChild(target.lastChild);
 	}
@@ -150,23 +152,34 @@ function createRouter() {
 						try {
 							const href = new URL(selector,document.baseURI).href;
 							(async () => {
-								try {
-									const file = await fetch(href),
-										text = await file.text(),
-										dom = hcx.asDOM(text),
-										body = dom.querySelector("body"),
-										head = dom.querySelector("head");
-								source = body ? body : (!head ? dom : null);	
-								} catch(e) {
-									console.warn(`valid source ${location.hash} is not available for route`);
-									return;
-								}
-								if(source) {
-									for(const target of targets) {
-										recompile(target,source,model,runnable==="true");
+								const remaining = [],
+									src = Object.keys(model||{}).reduce((accum,key) => accum += `${key}=${encodeURIComponent(model[key])}&`,href.includes("?") ? href : href+"?");
+								for(const target of targets) {
+									if(target.tagName==="IFRAME") {
+										target.setAttribute("src",src);
+									} else {
+										remaining.push(target);
 									}
-								} else {
-									console.warn(`valid source ${location.hash} is not available for route`)
+								}
+								if(remaining.length>0) {
+									try {
+										const file = await fetch(href),
+											text = await file.text(),
+											dom = hcx.asDOM(text),
+											body = dom.querySelector("body"),
+											head = dom.querySelector("head");
+									source = body ? body : (!head ? dom : null);	
+									} catch(e) {
+										console.warn(`valid source ${location.hash} is not available for route`);
+										return;
+									}
+									if(source) {
+										for(const target of remaining) {
+											recompile(target,source,model,runnable==="true");
+										}
+									} else {
+										console.warn(`valid source ${location.hash} is not available for route`)
+									}
 								}
 							})()
 						} catch(e) {

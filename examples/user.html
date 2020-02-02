@@ -1,0 +1,24 @@
+<html>
+<head>
+	<script type="module" src="../hcx.js" sync></script>
+	<script>
+		const loaded = async () => {
+			const url = new URL(document.location),
+				model = {};
+			for(let [key,value] of url.searchParams) {
+				model[key] = value;
+				try {
+					model[key] = JSON.parse(value);
+				} catch(e) {
+					;
+				}
+			}
+			await hcx.compile(document.body,model)();
+			document.body.removeAttribute("hidden");
+		}
+	</script>
+</head>
+<body onload="loaded()" hidden>
+${userid}
+</body>
+</html>

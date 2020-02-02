@@ -488,7 +488,7 @@ These will be registered as the respective event listeners for the event types o
 
 These will be registered as the respective event listeners for the event types on the component.
 
-4) arbitrary property functions that must take an `Event` as the first argument, e.g.
+4) arbitrary property functions, e.g.
 
 ```javascript
 {
@@ -496,7 +496,7 @@ These will be registered as the respective event listeners for the event types o
 }
 ```
 
-These will replace attributes of the form `onclick="hcx.myfunction(event)"` on the component.
+These will replace attributes of the form `onclick="myfunction(event)"` on the component and any of its child elements.
 
 ## Attribute Directives
 
@@ -622,12 +622,14 @@ they will not polute the rest of the document.
 
 #### Remote Content
 
-If the `to` attribute value does not result in the matching of an HTML element, an attempt is made to convert the value to a URL and
-retrieve the file at the URL. If the file can be retrieved and successfully parsed as HTML with a body, the body is used. If it
-is HTML without a body, then all the HTML is used.
+If the `to` attribute value does not result in the matching of an HTML element, an attempt is made to convert the value to a URL. 
 
-If the attribute `execute` is "true" and the remote body contains scripts, they will be executed in order. If they are dependent on scripts 
-in a remote head, errors will be logged but not interrupt the flow for the rest of the scripts.
+If the `target` is an iframe, its source will be set to the URL and all parameters will be appended to the query string of the URL. 
+
+Otherwise, an attempt to retrieve the file will be made. If the file can be retrieved and successfully parsed as HTML with a body, 
+the body is used. If it is HTML without a body, then all the HTML is used. If the attribute `execute` is "true" and the remote 
+body contains scripts, they will be executed in order. If they are dependent on scripts in a remote head, errors will be logged 
+but not interrupt the flow for the rest of the scripts.
 
 The use of remote content is ideal for micro-UI design. Each element of the UI can be designed and previewed in its own HTML file with its own styling.
 
@@ -637,7 +639,8 @@ If the content routed to contains scripts and `runnable="true"`, the scripts wil
 
 #### Isolating Scripts
 
-If the targetted content contains scripts, they can be isolated by making the target be a CSS selector for iframes.
+If the targetted content contains scripts and its is not a remote file, the script execution can be isolated by making the target be a CSS selector for iframes. Of course,
+you also have to add teh iframes to your document.
 
 #### Multiple Routes
 
@@ -715,7 +718,9 @@ There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
 
-2020-02-01 v0.0.13 BETA - Documentation updates. Support for `<iframe>` as target for `<hcx-router>`.
+2020-02-02 v0.0.14 BETA - Removed need to prefix event handler names with `hcx` as well as need for them to take an Event as first argument. Improved remote script handling.
+
+2020-02-01 v0.0.13 BETA - Documentation updates. Support for `<iframe>` as target for `<hcx-router>`. 
 
 2020-02-01 v0.0.12 BETA - Documentation updates.
 

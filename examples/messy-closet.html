@@ -34,7 +34,7 @@ window.addEventListener("DOMContentLoaded",() => {
 	const loop = hcx.compile(document.getElementById("loop"),{},{properties:{beforeRender() { console.log("before"); }}});
 	loop();
 
-	const content = hcx.compile(document.getElementById("content"));
+	const content = hcx.compile(document.getElementById("content"),null,{listeners:{clickMeToo() { alert("clicked me too"); }}});
 	hcx.bind(content)(myModel,document.getElementById("app"));
 
 	const modeled = hcx.compile(document.getElementById("modeled")),
@@ -69,6 +69,7 @@ window.addEventListener("DOMContentLoaded",() => {
 		<button onclick="${count++}">${count}</button>
 		<button on:click="${count++}">${count}</button>
 		<button onclick="alert('ok')">Click Me</button>
+		<button onclick="clickMeToo()">Click Me Too</button>
 		<div :hidden="${count>0}">Should be hidden after first count</div>
 		<div id="${count}" :hidden="${count===0}">Should be visible after first count</div>
 		${Table(tableConfig)}
@@ -93,7 +94,6 @@ window.addEventListener("DOMContentLoaded",() => {
 	<a href="#remote-template">Route to remote template</a>
 	<a href="#parameterized/user1?age=21">Parameterized userid:user1</a>
 	<hcx-router target="#route-target"></hcx-router>
-	<hcx-router path="remote-template" target="#myframe" to="./remote-template.html"></hcx-router>
 	<hcx-router path="route1" target="#route-target2" to="#always-this"></hcx-router>
 	<hcx-router path="remote-template" to="./remote-template.html" runnable="true"></hcx-router>
 	<hcx-router path="parameterized/:userid" to="#parameterized"></hcx-router>
@@ -112,6 +112,6 @@ window.addEventListener("DOMContentLoaded",() => {
 <table-element id="testtable" header="test header"></table-element>
 <div id="app"></div>
 IFrame below
-
 <iframe id="myframe"></iframe>
+<hcx-router path="parameterized/:userid" target="#myframe" to="./user.html"></hcx-router>
 </html>
