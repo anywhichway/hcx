@@ -1,27 +1,24 @@
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-			<script>
-			const loaded = () => {
-				hcx.compile(document.body,{message:"Hello World!"})()
-			}
-		</script>
-	</head>
-	<body onload="loaded(event)">
+	<body>
 		<div>
 		<!--hcx
-		${
-			`<ul>
 			${
-				["jack","jane","john"].reduce((accum,item) => {
-					debugger;
-					accum += `<li>${item}</li>`;
-					return accum;
-				},"")
+				`<ul>
+				${
+					["jack","jane","john"].reduce((accum,item) => {
+						debugger;
+						accum += `<li>${item}</li>`;
+						return accum;
+					},"")
+				}
+				</ul>`
 			}
-			</ul>`
-		}
-		</div>
         -->
+        </div>
+        <script type="module">
+			import {hcx} from "../hcx.js";
+		
+			hcx.compile(document.body,{message:"Hello World!"})()
+		</script>
 	</body>
 </html>

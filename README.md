@@ -19,7 +19,7 @@ HCX provides utility functions you can wrap around existing components or plain 
 HCX generally eliminates the need for control flow attribute directives. However, [`h-foreach`](#h-foreach), [`h-forvalues`](#h-forvalues), 
 [`h-forentries`](#h-forentries), (`h-forkeys`)[#h-forkeys] are directly supported and [custom directives](#custom-directives) can be added.
 
-HCX compeletely eliminates the need for content replacement directives like VUE's `v-text`. You just reference [reactive data](#reactivity) directly in your HTML, e.g.
+HCX compeletely eliminates the need for content replacement directives like VUE's `v-text`. You just reference static or [reactive data](#reactivity) directly in your HTML, e.g.
 instead of `<div v-text="message"></div>` just use `<div>${message}</div>`. This also means that the VUE filter syntax is un-neccesary, e.g.
 instead of `<span v-text="message | capitalize"></span>` use `<span>${message.toUpperCase()}</span>` or even the new JavaScript pipe operator when it becomes
 available `<span>${message |> capitalize}</span>`.
@@ -31,7 +31,7 @@ HCX supports [industry standard](https://developer.mozilla.org/en-US/docs/Web/We
 HCX introduces the concept of [runnable templates](#runnable-templates).
 
 HCX includes two custom elements: [`<hcx-include-element>`](#hcx-include-element) and [`<hcx-router>`](#hcx-router). The router can target any DOM node as a destination and sources its content from
-any other DOM node or a remote file. It can also use a RegExp for pattern matching routes. There can be multiple routers on the same page. In fact, multiple routers
+any other DOM node or a remote file. It can also use a `RegExp` for pattern matching routes. There can be multiple routers on the same page. In fact, multiple routers
 can respond to the same `hashchange` events. You can even have a routeless router, <hcx-router></hcx-router>, which will replace its own content with
 that of the DOM node having an id that matches the new location hash for a document.
 
@@ -131,16 +131,6 @@ And, an instruction can be provided to use the shadow DOM. By default it is true
 ```html
 <html>
 	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loaded = () => {
-				const el = document.getElementById("mytemplate"),
-					compiled = hcx.compile(el,null,{runnable:true,shadow:true})();
-				setTimeout(() => {
-					compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"))
-				})
-			};
-		</script>
 		<template id="mytemplate">
 			<style>
 				div {
@@ -152,9 +142,18 @@ And, an instruction can be provided to use the shadow DOM. By default it is true
 			<script>console.log("mytemplate was rendered")</script>
 		</template>
 	</head>
-	<body onload="loaded(event)">
+	<body>
 		<div>Here is the message:</div>
 		<div id="themessage"></div>
+		<script type="module">
+			import {hcx} from "../hcx.js";
+		
+			const el = document.getElementById("mytemplate"),
+				compiled = hcx.compile(el,null,{shadow:true,runable:true});
+			setTimeout(() => {
+				compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"))
+			})
+		</script>
 	</body>
 </html>
 ```
@@ -166,7 +165,7 @@ For micro-UI design, components can be stored as separate UI files with their ow
 	<head>
 		<!-- 
 			anything in the head will be ignored if the file is loaded as remote content source
-			however, if loaded directly, the head will be used
+			however, it loaded directly, the head will be used
 			perfect for ui component previewing!
 		 -->
 		<script>
@@ -182,30 +181,38 @@ For micro-UI design, components can be stored as separate UI files with their ow
 			}
 		</style>
 		<div date="${date}">And the message is: ${message}</div>
+		<script>alert("executing micro design script")</script>
 	</body>
 <html>
 ```
 
 ```html
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loaded = async () => {
-				const file = await fetch("./micro-ui-template.html"),
-					text = await file.text(),
-					el = hcx.asDOM(text);
-					compiled = hcx.compile(el.body ? el.body : el);
-				setTimeout(() => {
-					const shadow = true;
-					compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"),shadow)
-				})
-			};
-		</script>
-	</head>
-	<body onload="loaded(event)">
+	<body>
 		<div>Here is the message:</div>
 		<div id="themessage"></div>
+		<script type="module">
+			import {hcx} from "../hcx.js";
+		
+			(async () => {
+				const file = await fetch("./micro-design-template.html"),
+					text = await file.text(),
+					dom = hcx.asDOM(text),
+					body = dom.querySelector("body"),
+					head = dom.querySelector("head"),
+					el = body ? body : (!head ? dom : null),
+					compiled = el ? hcx.compile(el) : null;
+				setTimeout(() => {
+					if(compiled) {
+						const shadow = true;
+						compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"),shadow)
+					} else {
+						alert("error loading template")
+					}
+				});
+			})();
+			
+		</script>
 	</body>
 </html>
 ```
@@ -219,17 +226,14 @@ Boolean attributes are handled by attributes of the same name prefixed by a `:`:
 
 ```html
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loaded = () => {
-				hcx.compile(document.body,{box1:true,box2:false})();
-			});
-		</script>
-	</head>
-	<body onload="loaded(event)">
+	<body>
 		Box1: <input type="checkbox" :checked="${box1}">
 		Box2: <input type="checkbox" :checked="${box2}">
+		<script type="module">
+			import {hcx} from "../hcx.js";
+		
+			hcx.compile(document.body,{box1:true,box2:false})();
+		</script>
 	</body>
 </html>
 ```
@@ -241,39 +245,33 @@ assistance:
 
 ```html
 <html>
-  <head>
-    <script type="module" src="../hcx.js"></script>
-	  <script>
-		  const Table = ({header="",headings=[],rows=[]}) => { // a table that adjusts to its headings and rows
-		    const cols = Math.max(headings.length,rows.reduce((accum,row) => accum = Math.max(accum,row.length),0));
-		    rows = rows.map((row) => row.length<cols ? row.slice().concat(new Array(cols-row.length)) : row); // pad rows
-		  return hcx`
-		    <table>
-		    ${header ? `<thead id="header"><tr><th colspan="${cols}">${header}</th></tr></thead>` : ''}
-		    ${headings.length>0 ? `<thead><tr>${headings.reduce((accum,heading) => accum += `<th>${heading}</th>`,"")}</tr></thead>` : ''}
-		    ${rows.length>0
-		        ? `<tbody>${rows.reduce((accum,row) => 
-		                    accum += `<tr>${row.reduce((accum,value) => accum += `<td>${value==null ? '' : value}</td>`,"")}</tr>`,"")}
-		          </tbody>` 
-		        : ''}
-		    </table>`
-		  };
-			
-		  const loaded = () => {
-		    hcx.compile(document.body,{
-		      tableConfig:{
-		        header:"My Table",rows:[["a","b","c"],["d","e","f"]]
-		        },
-		      Table
-		    })();
-		   }
-	  </script>
-  </head>
-  <body onload="loaded(event)">
-    ${Table(tableConfig)}
-  </body>
-</html>
+	<body>
+		${Table(tableConfig)}
+		
+		<script type="module">
+		import {hcx} from "../hcx.js";
 
+		const Table = ({header="",headings=[],rows=[]}) => { // a table that adjusts to its headings and rows
+			const cols = Math.max(headings.length,rows.reduce((accum,row) => accum = Math.max(accum,row.length),0));
+			rows = rows.map((row) => row.length<cols ? row.slice().concat(new Array(cols-row.length)) : row); // pad rows
+			return hcx`
+				<table>
+				${header ? `<thead id="header"><tr><th colspan="${cols}">${header}</th></tr></thead>` : ''}
+				${headings.length>0 ? `<thead><tr>${headings.reduce((accum,heading) => accum += `<th>${heading}</th>`,"")}</tr></thead>` : ''}
+				${rows.length>0 ? `<tbody>${rows.reduce((accum,row) => accum += `<tr>${row.reduce((accum,value) => accum += `<td>${value==null ? '' : value}</td>`,"")}</tr>`,"")}</tbody>` : ''}
+				</table>
+			`
+		};
+
+		hcx.compile(document.body,{
+			 tableConfig:{
+			   header:"My Table",rows:[["a","b","c"],["d","e","f"]]
+			 },
+			 Table
+		})();
+		</script>
+	</body>
+</html>
 ````
 
 Produces
@@ -290,29 +288,26 @@ Arbitrarily complex JavaScript logic can be included by enclosing the script in 
 
 ```html
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loaded = () => {
-				hcx.compile(document.body,{message:"Hello World!"})();
-			}
-		</script>
-	</head>
-	<body onload="loaded(event)">
+	<body>
 		<div>
 		<!--hcx
-		${
-			`<ul>
 			${
-				["jack","jane","john"].reduce((accum,item) => {
-					accum += `<li>${item}</li>`;
-					return accum;
-				},"")
+				`<ul>
+					${
+						["jack","jane","john"].reduce((accum,item) => {
+							accum += `<li>${item}</li>`;
+							return accum;
+						},"")
+					}
+				</ul>`
 			}
-			</ul>`
-		}
-		</div>
         -->
+        </div>
+        <script type="module">
+			import {hcx} from "../hcx.js";
+	
+			hcx.compile(document.body,{message:"Hello World!"})();
+		</script>
 	</body>
 </html>
 ```
@@ -321,30 +316,27 @@ Arbitrarily complex JavaScript logic can be included by enclosing the script in 
 
 ```html
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loded = () => {
-				hcx.compile(document.body,{message:"Hello World!"})();
-			}
-		</script>
-	</head>
-	<body onload="loaded(event)">
+	<body>
 		<div>
 		<!--hcx
-		${
-			`<ul>
 			${
-				["jack","jane","john"].reduce((accum,item) => {
-					debugger;
-					accum += `<li>${item}</li>`;
-					return accum;
-				},"")
+				`<ul>
+				${
+					["jack","jane","john"].reduce((accum,item) => {
+						debugger;
+						accum += `<li>${item}</li>`;
+						return accum;
+					},"")
+				}
+				</ul>`
 			}
-			</ul>`
-		}
-		</div>
         -->
+        </div>
+        <script type="module">
+			import {hcx} from "../hcx.js";
+		
+			hcx.compile(document.body,{message:"Hello World!"})()
+		</script>
 	</body>
 </html>
 ```
@@ -374,18 +366,15 @@ Any HTML can be made reactive by passing in a reactor. By creating the reactor b
 
 ```html
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loaded = () => {
-				const reactor = hcx.reactor({message:"Wait for it ...."});
-				hcx.compile(document.body,reactor)();
-				setTimeout(() => reactive.message="Hello World!",2000);
-			}
-		</script>
-	</head>
-	<body onload="loaded(event)">
+	<body>
 		<div>${message}</div>
+		<script type="module">
+			import {hcx} from "../hcx.js";
+		
+			const reactor = hcx.reactor({message:"Wait for it ...."});
+			hcx.compile(document.body,reactor)();
+			setTimeout(() => reactor.message="Hello World!",2000);
+		</script>
 	</body>
 </html>
 ```
@@ -396,17 +385,14 @@ You can implement a reactive counter with an `on:click` attribute:
 
 ```html
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loaded = () => {
-				const reactor = hcx.reactor({count:0});
-				hcx.compile(document.body,reactor)();
-			}
-		</script>
-	</head>
-	<body onload="loaded(event)">
+	<body>
 		<button on:click="${count++}">Click Count:${count}</button>
+		<script type="module">
+			import {hcx} from "../hcx.js";
+		
+			const reactor = hcx.reactor({count:0});
+			hcx.compile(document.body,reactor)();
+		</script>
 	</body>
 </html>
 ```
@@ -415,16 +401,13 @@ If you do not need to access the reactor outside the context of the HTML, you ca
 
 ```html
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loaded = () => {
-				hcx.compile(document.body,{count:0},{reactive:true)();
-			}
-		</script>
-	</head>
-	<body onload="loaded(event)">
+	<body>
 		<button on:click="${count++}">Click Count:${count}</button>
+		<script type="module">
+			import {hcx} from "../hcx.js";
+		
+			hcx.compile(document.body,{count:0},{reactive:true})()
+		</script>
 	</body>
 </html>
 ```
@@ -433,17 +416,14 @@ Regular 'on...' attributes can also be used (although they may result in a conso
 
 ```html
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loaded = () => {
-				const reactive = hcx.reactor({count:0});
-				hcx.compile(document.body,reactive)();
-			}
-		</script>
-	</head>
-	<body onload="loaded(event)">
+	<body>
 		<button onclick="${count++}">Click Count:${count}</button>
+		<script type="module">
+			import {hcx} from "../hcx.js";
+		
+			const reactive = hcx.reactor({count:0});
+			hcx.compile(document.body,reactive)();
+		</script>
 	</body>
 </html>
 ```
@@ -717,6 +697,8 @@ Default handlers are provided, so you do not have to create all of them.
 There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
+
+2020-02-04 v0.0.15 BETA - Documentation and example updates.
 
 2020-02-02 v0.0.14 BETA - Removed need to prefix event handler names with `hcx` as well as need for them to take an Event as first argument. Improved remote script handling.
 

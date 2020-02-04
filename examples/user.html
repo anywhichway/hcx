@@ -1,8 +1,10 @@
 <html>
-<head>
-	<script type="module" src="../hcx.js" sync></script>
-	<script>
-		const loaded = async () => {
+<body hidden>
+${userid}
+	<script type="module">
+		import {hcx} from "../hcx.js";
+		
+		(async () => {
 			const url = new URL(document.location),
 				model = {};
 			for(let [key,value] of url.searchParams) {
@@ -15,10 +17,7 @@
 			}
 			await hcx.compile(document.body,model)();
 			document.body.removeAttribute("hidden");
-		}
+		})();
 	</script>
-</head>
-<body onload="loaded()" hidden>
-${userid}
 </body>
 </html>

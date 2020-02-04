@@ -1,13 +1,10 @@
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loaded = () => {
-				hcx.compile(document.getElementById("themessage"),{date:new Date(),message:"Hello World!"})()
-			}
-		</script>
-	</head>
-	<body onload="loaded(event)">
+	<body>
 		<div id="themessage" date="${date}">${message}</div>
+		<script type="module">
+			import {hcx} from "../hcx.js";
+		
+			hcx.compile(document.getElementById("themessage"),{date:new Date(),message:"Hello World!"})()
+		</script>
 	</body>
 </html>

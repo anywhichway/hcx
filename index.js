@@ -268,34 +268,7 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 				}
 			}
 		}
-		if((!directiveresults || directiveresults.length>0) && node.childNodes && !(node instanceof Text)) {
-			if(node.originalContent) {
-				const value = await resolve({node,text:node.originalContent,model,extras,hcx});
-				value.originalContent = node.originalContent;
-				value.expandsInstruction = node.expandsInstruction;
-				node.parentElement.replaceChild(value,node);
-				node.replacementNode = value;
-			} else {
-				if(directiveresults) {
-					directiveresults.forEach((directive) => {
-						if(directive.before) {
-							directive.before(node)
-						}
-					})	
-				}
-				for(const child of node.childNodes) {
-					await render(child,model,undefined,false,extras);
-				}
-				if(directiveresults) {
-					directiveresults.forEach((directive) => {
-						if(directive.after) {
-							directive.after(node)
-						}
-					})
-				}
-				document.renderingNode = node;
-			}
-		} else if(node instanceof Text) {
+		if(node instanceof Text) {
 			if(node.wholeText.includes("${")) {
 				node.originalContent = node.wholeText;
 			}
@@ -335,6 +308,33 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 			} else {
 				value.expandsInstruction = node.instructionId;
 				node.parentElement.insertBefore(value,node);
+			}
+		} else if((!directiveresults || directiveresults.length>0) && node.childNodes) {
+			if(node.originalContent) {
+				const value = await resolve({node,text:node.originalContent,model,extras,hcx});
+				value.originalContent = node.originalContent;
+				value.expandsInstruction = node.expandsInstruction;
+				node.parentElement.replaceChild(value,node);
+				node.replacementNode = value;
+			} else {
+				if(directiveresults) {
+					directiveresults.forEach((directive) => {
+						if(directive.before) {
+							directive.before(node)
+						}
+					})	
+				}
+				for(const child of node.childNodes) {
+					await render(child,model,undefined,false,extras);
+				}
+				if(directiveresults) {
+					directiveresults.forEach((directive) => {
+						if(directive.after) {
+							directive.after(node)
+						}
+					})
+				}
+				document.renderingNode = node;
 			}
 		}
 		document.renderingNode = null;
@@ -427,12 +427,23 @@ const addEventListenersAux = (el,listeners,recursing) => {
 					})
 				}
 			}
-			for(const child of el.children) {
-				addEventListenersAux(child,listeners,true);
-			}
 		}
 	})
-	
+	for(const attribute of attributes) {
+		const handler = attribute.value.trim();
+		if(attribute.name.startsWith("on")  && handler.startsWith("${")) {
+			const ename = attribute.name.startsWith("on:") ? attribute.name.substring(3) : attribute.name.substring(2);
+			if(!attribute.name.startsWith("on:")) {
+				el.removeAttribute(attribute.name);
+			}
+			el.addEventListener(ename,(event) => {
+				eval("`" + handler + "`");
+			})
+		}
+	}
+	for(const child of el.children) {
+		addEventListenersAux(child,listeners,true);
+	}
 	return el;
 }
 const addEventListeners = hcx.addEventListeners = (component,listeners={}) => {
@@ -486,7 +497,7 @@ const makeReactorProxy = (data,parent={}) => {
 	}
 	const rendering = document.renderingNode;
 	document.renderingNode = null;
-	const pseudoObject = Object.keys(data).concat(Object.keys(parent)).reduce((accum,key) => { accum[key] = undefined; return accum;},{});
+	const pseudoObject = Object.keys(data).concat(Object.keys(parent)).reduce((accum,key) => { const value = data[key]; accum[key] = value!=null ? value : parent[key]; return accum;},{});
 	document.renderingNode = rendering;
 	const proxy = new Proxy(pseudoObject,{
 		get(_,property) {

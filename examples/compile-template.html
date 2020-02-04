@@ -1,15 +1,5 @@
 <html>
 	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loaded = () => {
-				const el = document.getElementById("mytemplate"),
-					compiled = hcx.compile(el,null,{shadow:true,runable:true});
-				setTimeout(() => {
-					compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"))
-				})
-			};
-		</script>
 		<template id="mytemplate">
 			<style>
 				div {
@@ -21,8 +11,17 @@
 			<script>console.log("mytemplate was rendered")</script>
 		</template>
 	</head>
-	<body onload="loaded(event)">
+	<body>
 		<div>Here is the message:</div>
 		<div id="themessage"></div>
+		<script type="module">
+			import {hcx} from "../hcx.js";
+		
+			const el = document.getElementById("mytemplate"),
+				compiled = hcx.compile(el,null,{shadow:true,runable:true});
+			setTimeout(() => {
+				compiled({message:"Hello World!",date:new Date()},document.getElementById("themessage"))
+			})
+		</script>
 	</body>
 </html>

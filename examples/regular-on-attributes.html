@@ -1,14 +1,11 @@
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			window.addEventListener("DOMContentLoaded",() => {
-				const reactive = hcx.reactor({count:0});
-				hcx.compile(document.body,reactive)();
-			});
-		</script>
-	</head>
 	<body>
 		<button onclick="${count++}">Click Count:${count}</button>
+		<script type="module">
+			import {hcx} from "../hcx.js";
+		
+			const reactive = hcx.reactor({count:0});
+			hcx.compile(document.body,reactive)();
+		</script>
 	</body>
 </html>

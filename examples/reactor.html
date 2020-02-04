@@ -1,15 +1,12 @@
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loaded = () => {
-				const reactor = hcx.reactor({message:"Wait for it ...."});
-				hcx.compile(document.body,reactor)();
-				setTimeout(() => reactive.message="Hello World!",2000);
-			}
-		</script>
-	</head>
-	<body onload="loaded(event)">
+	<body>
 		<div>${message}</div>
+		<script type="module">
+			import {hcx} from "../hcx.js";
+		
+			const reactor = hcx.reactor({message:"Wait for it ...."});
+			hcx.compile(document.body,reactor)();
+			setTimeout(() => reactor.message="Hello World!",2000);
+		</script>
 	</body>
 </html>

@@ -1,8 +1,11 @@
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loaded = async () => {
+	<body>
+		<div>Here is the message:</div>
+		<div id="themessage"></div>
+		<script type="module">
+			import {hcx} from "../hcx.js";
+		
+			(async () => {
 				const file = await fetch("./micro-design-template.html"),
 					text = await file.text(),
 					dom = hcx.asDOM(text),
@@ -17,12 +20,9 @@
 					} else {
 						alert("error loading template")
 					}
-				})
-			};
+				});
+			})();
+			
 		</script>
-	</head>
-	<body onload="loaded(event)">
-		<div>Here is the message:</div>
-		<div id="themessage"></div>
 	</body>
 </html>

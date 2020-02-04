@@ -1,13 +1,10 @@
 <html>
-	<head>
-		<script type="module" src="../hcx.js"></script>
-		<script>
-			const loaded = () => {
-				hcx.compile(document.body,{count:0},{reactive:true})()
-			}
-		</script>
-	</head>
-	<body onload="loaded(event)">
+	<body>
 		<button on:click="${count++}">Click Count:${count}</button>
+		<script type="module">
+			import {hcx} from "../hcx.js";
+		
+			hcx.compile(document.body,{count:0},{reactive:true})()
+		</script>
 	</body>
 </html>
