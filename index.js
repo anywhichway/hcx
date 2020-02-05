@@ -124,6 +124,41 @@ const XMLtoHTML = (node) => {
 	return node.cloneNode(true);
 }
 
+const getModelValue = (model,property) => {
+	let currentValue = model,
+		key;
+	const keys = property.split(".");
+	while(model && typeof(model)==="object" && keys.length>0) {
+		key = keys.shift();
+		model = model[key];
+	}
+	if(keys.length===0) {
+		return currentValue;
+	}
+}
+
+const setModelValue = (model,property,value) => {
+	let currentValue = model,
+		_model = model,
+		key;
+	const keys = property.split(".");
+	while(currentValue && typeof(currentValue)==="object" && keys.length>0) {
+		_model = currentValue;
+		key = keys.shift();
+		currentValue = currentValue[key];
+	}
+	if(keys.length===0) {
+		try {
+			value = JSON.parse(value);
+		} catch(e) {
+			;
+		}
+		if(currentValue!==value) {
+			_model[key] = value;
+		}
+	}
+}
+
 const directive = hcx.directive = (f,attributeName="h-"+f.name) => {
 	if(attributeName.startsWith("f-")) {
 		DIRECTIVES[attributeName] = f;
@@ -342,7 +377,7 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 	return node;
 }
 
-const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listeners,properties,shadow=true,runnable}={}) => {
+const compile = hcx.compile = (el,model,{imports,exports,reactive,listeners,properties,shadow=true,runnable}={}) => {
 	if(el && typeof(el)==="object" && el instanceof HTMLElement) {
 		const f = async (el,_model,target,_shadow) => {
 			if(_shadow===undefined) {
@@ -350,9 +385,9 @@ const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listene
 			}
 			if(!_model) {
 				_model = model;
-				if((imports && imports.length>0) || (exports && exports.length>0) || reactive) {
-					_model = createModel(_model,{imports,exports,reactive})
-				}
+			}
+			if((imports && imports.length>0) || (exports && exports.length>0) || reactive) {
+				_model = createModel(_model,{imports,exports,reactive})
 			}
 			return new Promise((resolve,reject) => {
 				requestAnimationFrame(async () => {
@@ -363,9 +398,7 @@ const compile = hcx.compile = (el,model,{imports,exports,reactive,inputs,listene
 					if(properties) {
 						hcx.properties(node,properties);
 					}
-					if(inputs) {
-						bind(node,_model,{inputs});
-					}
+					bind(node,_model);
 					const scripts = node.querySelectorAll("script")||[];
 					for(const script of scripts) {
 						const type = script.getAttribute("type")||"text/javascript",
@@ -429,18 +462,6 @@ const addEventListenersAux = (el,listeners,recursing) => {
 			}
 		}
 	})
-	for(const attribute of attributes) {
-		const handler = attribute.value.trim();
-		if(attribute.name.startsWith("on")  && handler.startsWith("${")) {
-			const ename = attribute.name.startsWith("on:") ? attribute.name.substring(3) : attribute.name.substring(2);
-			if(!attribute.name.startsWith("on:")) {
-				el.removeAttribute(attribute.name);
-			}
-			el.addEventListener(ename,(event) => {
-				eval("`" + handler + "`");
-			})
-		}
-	}
 	for(const child of el.children) {
 		addEventListenersAux(child,listeners,true);
 	}
@@ -565,34 +586,15 @@ const reactor = hcx.reactor = (data) => {
 	return makeReactorProxy(data);
 }
 
-const bindAux = (el,model,{inputs}) => {
+const bindAux = (el,model) => {
 	if(model && typeof(model)==="object") {
-		const _inputs = el.querySelectorAll("input, select, textarea");
-		for(const input of _inputs) {
-			const property = input.getAttribute("bind")||input.getAttribute("name")||input.getAttribute("id");
-			if(property && (inputs==="*" || (Array.isArray(inputs) && inputs.includes(property)))) {
+		const inputs = el.querySelectorAll("input, select, textarea");
+		for(const input of inputs) {
+			const property = input.getAttribute("bind");
+			if(property) {
 				input.addEventListener("change",(event) => {
 					document.renderingNode = input;
-					let currentValue = model,
-					_model = model,
-					key;
-					const keys = property.split(".");
-					while(currentValue && typeof(currentValue)==="object" && keys.length>0) {
-						_model = currentValue;
-						key = keys.shift();
-						currentValue = currentValue[key];
-					}
-					if(keys.length===0) {
-						let value = event.target.value;
-						try {
-							value = JSON.parse(value);
-						} catch(e) {
-							;
-						}
-						if(currentValue!==value) {
-							_model[key] = value;
-						}
-					}
+					setModelValue(model,property,event.target.value);
 				})
 			}
 		}
@@ -600,7 +602,7 @@ const bindAux = (el,model,{inputs}) => {
 	return el;
 }
 
-const bind = hcx.bind = (component,modelOrModelArgIndex=0,{inputs="*",imports,exports,reactive}={}) => {
+const bind = hcx.bind = (component,modelOrModelArgIndex=0) => {
 	const type = typeof(component);
 	if(type==="function") {
 		return async (...args) => {
@@ -608,21 +610,18 @@ const bind = hcx.bind = (component,modelOrModelArgIndex=0,{inputs="*",imports,ex
 				args[i] = await args[i];
 			}
 			let _model = typeof(modelOrModelArgIndex)==="number" ? args[modelOrModelArgIndex] : modelOrModelArgIndex;
-			if((imports && imports.length>0) || (exports && exports.length>0) || reactive) {
-				_model = createModel(_model,{imports,exports,reactive})
-			}
 			if(typeof(modelOrModelArgIndex)==="number") {
 				args[modelOrModelArgIndex] = _model;
 			}
 			const el = await component(...args);
 			if(el && typeof(el)==="object" && (el instanceof HTMLElement || el instanceof DocumentFragment)) {
-				return bindAux(el,_model,{inputs});
+				return bindAux(el,_model);
 			}
 			throw new TypeError("component function must return an HTMLElement for bind");
 		}
 	}
 	if(component && type==="object" && (component instanceof HTMLElement || component instanceof DocumentFragment)) {
-		return bindAux(component,modelOrModelArgIndex,{inputs})
+		return bindAux(component,modelOrModelArgIndex)
 	}
 	throw new TypeError("First argument to hcx.bind must be a function or HTMLElement");
 }

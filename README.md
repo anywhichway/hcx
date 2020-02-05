@@ -9,43 +9,45 @@ Core Library:
 
 # What
 
-HTML Compiler eXtensions (HCX) flips JSX on its head. Rather than make JavaScript handle HTML, HCX makes HTML handle JavaScript more directly.
+HTML Compiler eXtensions (HCX) flips JSX on its head. Rather than make JavaScript handle HTML, HCX makes HTML handle JavaScript more directly by extending 
+[JavaScript template literal](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) notation, i.e. `${ ... javascript }`, into HTML itself.
 
-HCX extends [JavaScript template literal](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) notation, i.e. `${ ... javascript }`, into HTML itself.
+HCX also:
 
-HCX provides utility functions you can wrap around existing components or plain old HTMLElement DOM nodes to [bind forms to models](#binding-inputs) and
-[event listeners](#adding-event-listeners) to anything you can select via CSS.
+1) provides utility functions you can wrap around existing components or plain old HTMLElement DOM nodes to [event listeners](#adding-event-listeners) to anything you can select via CSS.
 
-HCX generally eliminates the need for control flow attribute directives. However, [`h-foreach`](#h-foreach), [`h-forvalues`](#h-forvalues), 
+2) automatically [bind inputs to models](#binding-inputs).
+
+3) generally eliminates the need for control flow attribute directives. However, [`h-foreach`](#h-foreach), [`h-forvalues`](#h-forvalues), 
 [`h-forentries`](#h-forentries), (`h-forkeys`)[#h-forkeys] are directly supported and [custom directives](#custom-directives) can be added.
 
-HCX compeletely eliminates the need for content replacement directives like VUE's `v-text`. You just reference static or [reactive data](#reactivity) directly in your HTML, e.g.
+4) compeletely eliminates the need for content replacement directives like VUE's `v-text`. You just reference static or [reactive data](#reactivity) directly in your HTML, e.g.
 instead of `<div v-text="message"></div>` just use `<div>${message}</div>`. This also means that the VUE filter syntax is un-neccesary, e.g.
 instead of `<span v-text="message | capitalize"></span>` use `<span>${message.toUpperCase()}</span>` or even the new JavaScript pipe operator when it becomes
 available `<span>${message |> capitalize}</span>`.
 
-HCX lets you set [`debugger` points](#debugging) directly in your HTML template literals for WYSYWIG debugging.
+5) lets you set [`debugger` points](#debugging) directly in your HTML template literals for WYSYWIG debugging.
 
-HCX supports [industry standard](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements) [Custom HTML Elements](#custome-elements). In fact, you can turn any HTMLElement DOM node into a Custom HTML Element.
+6) supports [industry standard](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements) [Custom HTML Elements](#custome-elements). In fact, you can turn any HTMLElement DOM node into a Custom HTML Element.
 
-HCX introduces the concept of [runnable templates](#runnable-templates).
+7) introduces the concept of [runnable templates](#runnable-templates).
 
-HCX includes two custom elements: [`<hcx-include-element>`](#hcx-include-element) and [`<hcx-router>`](#hcx-router). The router can target any DOM node as a destination and sources its content from
+8) includes two custom elements: [`<hcx-include-element>`](#hcx-include-element) and [`<hcx-router>`](#hcx-router). The router can target any DOM node as a destination and sources its content from
 any other DOM node or a remote file. It can also use a `RegExp` for pattern matching routes. There can be multiple routers on the same page. In fact, multiple routers
 can respond to the same `hashchange` events. You can even have a routeless router, <hcx-router></hcx-router>, which will replace its own content with
 that of the DOM node having an id that matches the new location hash for a document.
 
-HCX does not use a virtual DOM, it's dependency tracker laser targets just those nodes that need updates. No work has yet been done on
+9) does not use a virtual DOM, it's dependency tracker laser targets just those nodes that need updates. No work has yet been done on
 rendering optimization, but 60Hz (which is adequate for most applications) should be achievable.
 
-HCX allows designers to express a UI as HTML and CSS at whatever [micro](#templates-and-remote-content), macro, or monolithic scale they wish and then hand-off to programmers to
+10) allows designers to express a UI as HTML and CSS at whatever [micro](#templates-and-remote-content), macro, or monolithic scale they wish and then hand-off to programmers to
 layer in functionality. Designers can continue to adjust much of the HTML while programmers are at work. For designers that wish to code, HCX 
 also makes the transition into bits and pieces of JavaScript easier than moving into a full build/code oriented environment.
 
+There is no build environment/pre-compilation required.
+
 HCX is a successor to TLX, Template Literal Extensions. It is simpler to use, slightly smaller, and more flexible. It is also far smaller and we think simpler and more
 flexible than a buch of other options out there.
-
-There is no build environment/pre-compilation required.
 
 # Usage
 
@@ -111,8 +113,6 @@ The full signature for compile is:
 `exports` - An optional array of model keys used to add data properties directly to the element or to set as attribute values.
 
 `reactive` - An optional boolean which if truthy makes the `model` into a reactor such that any time it changes portions of the `el` referencing the changed properties will be re-rendered. See [Reactivity}(#reactivity).
-
-`inputs` - Defaults to '"*"` to bind a all inputs to the `model`. Can also be an array of input ids. See [Binding Inputs](#binding-inputs).
 
 `listeners` - An optional object holding Event listeners to add. See [Adding Event Listeners](#adding-event-listeners).
 
@@ -343,22 +343,14 @@ Arbitrarily complex JavaScript logic can be included by enclosing the script in 
 
 ## Binding Inputs
 
-Binding inputs associate sinput elements of type `<input>`, `<textarea>` and `<select>` with a model such that any time they are updated the model is updated. 
-Compiled HTML is automatically bound and passing `bound:true` to `hcx.customElement` or wrapping a component in `hcx.bind` will also bind the inputs.
+Binding inputs associates input elements of type `<input>`, `<textarea>` and `<select>` with a model such that any time they are updated the model is updated. 
 
-`hcx.bind(component,modelOrModelArgIndex=0,{inputs="*",imports,exports,reactive}={})`
+To bind inputs to a model, all you need to do is add a `bind` attribute to the input element with a value that is the dot delimited key path for the current model. Bind
+is two way, you do not need to specify a value attribute. If you want the UI to re-render, then a `reactor` should be used for the model. See [Reactivity](#reactivity) below.
 
-`component` - An `HTMLElement` or a function returning one.
-
-`modelOrModelArgIndex` - An object or a number representing the argument position of the `model` in the `component` function when called. Defaults to 0.
-
-`inputs` - Defauls to `"*"` for all elements that can take input. It can also be an array on input ids to be more selective.
-
-`imports` - Attributes to add to the model.
-
-`exports` - Keys to export from the model and place on the rendered HTMLElement or update attributes.
-
-`reactive` - Converts the model to a reactive one so that any changes automatically force a re-render of the component.
+```
+<input bind="personalInfo.address.street">
+```
 
 ## Reactivity
 
@@ -619,8 +611,8 @@ If the content routed to contains scripts and `runnable="true"`, the scripts wil
 
 #### Isolating Scripts
 
-If the targetted content contains scripts and its is not a remote file, the script execution can be isolated by making the target be a CSS selector for iframes. Of course,
-you also have to add teh iframes to your document.
+If the targetted content contains scripts and it is not a remote file, the script execution can be isolated by making the target be a CSS selector for iframes. Of course,
+you also have to add the iframes to your document.
 
 #### Multiple Routes
 
@@ -651,7 +643,7 @@ router.addEventListener("route",(event) => { // if you make this async, event.pr
 
 Custom elements can be added using the function:
 
-`hcx.customElement(tagName,component,{observed=[],callbacks={},properties={},extend={},defaultModel={},modelArgIndex=0,bound,listeners,reactiveObserved,shadow=true}={})`
+`hcx.customElement(tagName,component,{observed=[],callbacks={},properties={},extend={},defaultModel={},modelArgIndex=0,listeners,reactiveObserved,shadow=true}={})`
 
 `tagName` - Per industry standard must include at least one `-`. Can be mixed case to support camel casing the component class that is created, e.g.
 `HCX-include` creates a class called `HCXInclude`. However, per industry standard the actual HTML tag will be single case, e.g. `hcx-include`.
@@ -661,6 +653,7 @@ case a container element is created such that all inner HTML is preserved at ren
 stylistic and UI funcation purposes. See `examples/container.html`.
 
 `observed` - Attributes to be observed per [industry standard for the `attributeChangedCallback`](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#Using_the_lifecycle_callbacks).
+Observed attributes are also automatically imported to the model and exported directly onto the element when they change.
 
 `callbacks` - Industry standard callbacks without the suffix `Callback`, e.g.
 
@@ -683,8 +676,6 @@ Default handlers are provided, so you do not have to create all of them.
 
 `modelArgIndex` - The inded of the 'model` in the arguments to `component` at runtime.
 
-`bound` - Set to `true` if the rendered element should automatically bind `model` properties to inputs.
-
 `listeners` - Event listeners. See [addEventListeners](#adding-event-listeners).
 
 `reactiveObservered` - Set to `true` if you want to automatically re-render anytime an observed attribute changes. You can still provide an 
@@ -697,6 +688,8 @@ Default handlers are provided, so you do not have to create all of them.
 There has been limited testing or focus on optimization.
 
 # Release History (Reverse Chronological Order)
+
+2020-02-05 v0.0.16 BETA - Documentation updates. Simplified input binding. A `bind` function no longer neeeds to be called. Just use a `bind` attribute on the input element.
 
 2020-02-04 v0.0.15 BETA - Documentation and example updates.
 

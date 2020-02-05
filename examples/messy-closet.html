@@ -74,7 +74,7 @@ window.addEventListener("DOMContentLoaded",() => {
 		<div id="${count}" :hidden="${count===0}">Should be visible after first count</div>
 		${Table(tableConfig)}
 		<form>
-			<input value="${tableConfig.header}" bind="tableConfig.header">
+			<input bind="tableConfig.header">
 		</form>
 		<table>
 		<tr><td>fixed</td></tr>

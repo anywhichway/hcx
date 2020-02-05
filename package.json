@@ -1,7 +1,7 @@
 {
   "name": "hcx",
   "description": "HTML Compiler - Routeless, targetless, remote, runnable routes and more ...",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "contributors": [
     {
       "name": "Simon Y. Blackwell",
