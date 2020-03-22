@@ -2,7 +2,7 @@ export const hcx = async function(strings,...args) {
 	for(let i=0;i<args.length;i++) {
 		args[i] = await args[i];
 	}
-	return hcxSync(strings,...args);
+	return hcx.sync(strings,...args);
 }
 if(typeof(window)!=="undefined") {
 	window.hcx = hcx;
@@ -24,7 +24,7 @@ const DIRECTIVES = {
 				for(let child of node.originalChildren) {
 					// make sure to clone and not use the original nodes
 					child = child.cloneNode(true);
-					// forevery, forkeys, etc are all converetd to foreach, so fake the model properties to be appropriate
+					// forevery, forkeys, etc are all converted to foreach, so fake the model properties to be appropriate
 					const extra = {currentValue,index,array,entry:currentValue,entries:array,value:currentValue}
 					child = await hcx.render(child,model,undefined,false,Object.assign(extras,extra));
 					node.appendChild(child);
@@ -52,7 +52,24 @@ const asDOM = hcx.asDOM = (value) => {
 	return node.childNodes.length>1 ? node : node.firstChild;
 }
 
-function hcxSync(strings,...args) {
+const toVDOM = hcx.toVDOM = (node) => {
+	node.normalize();
+	if(node instanceof Text) {
+		return node.wholeText;
+	}
+	if(node instanceof Comment) {
+		return `<!--${node.innerText}-->`
+	}
+	if(node instanceof HTMLElement) {
+		return {
+			nodeName: node.tagName,
+			attributes: [].slice.call(node.attributes).reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum; },{}),
+			children: [].slice.call(node.childNodes).reduce((accum,node) => { const child = toVDOM(node); if(child) { accum.push(child) } return accum; },[])
+		}
+	}
+}
+
+hcx.sync = function hcxSync(strings,...args) {
 	if(args.some((arg) => arg && typeof(arg)==="object" && arg instanceof Node)) {
 		args = args.map((arg) => arg && typeof(arg)==="object" && arg instanceof Node ? arg : new Text(arg+""))
 		return args.length>1 ? args : args[0]; // template processing returned DOM nodes
@@ -70,6 +87,22 @@ function stringifyObjects(value) {
 		return JSON.stringify(value);
 	}
 	return value;
+}
+
+function camelize(text) {
+	return text.split("-").reduce((accum,part,i) => {
+		if(i>0) {
+			return accum += part[0].toUpperCase() + part.substring(1);
+		}
+		return part;
+	},"")
+}
+
+function decamelize(str, separator="-"){
+	return str
+        .replace(/([a-z\d])([A-Z])/g, '$1' + separator + '$2')
+        .replace(/([A-Z]+)([A-Z][a-z\d]+)/g, '$1' + separator + '$2')
+        .toLowerCase();
 }
 
 async function resolve({node,text,model,extras,hcx}) {
@@ -191,6 +224,13 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 			attributes = [].slice.call(node.attributes).reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum;},{});
 		}
 		const max = target.childNodes.length;
+		if(target.attributes) {
+			Object.keys(attributes).forEach((key) => {
+				if(key!=="id" && !target.attributes[key]) {
+					target.setAttribute(key,attributes[key]);
+				}
+			})
+		}
 		if(shadow) {
 			while(target.lastChild) {
 				target.removeChild(target.lastChild);
@@ -212,13 +252,6 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 		while(body.firstChild) {
 			target.appendChild(body.firstChild)
 		}
-		if(target.attributes) {
-			Object.keys(attributes).forEach((key) => {
-				if(key!=="id" && !target.attributes[key]) {
-					target.setAttribute(key,attributes[key]);
-				}
-			})
-		}
 		node = target;
 	}
 	const directives = [];
@@ -226,6 +259,9 @@ const render = hcx.render = async (node,model,target,shadow,extras={}) => {
 	if(node.tagName!=="SCRIPT") {
 		node.normalize();
 		document.renderingNode = node;
+		//if(node.style) {
+		//	node.setAttribute("style",node.style.cssText);
+		//}
 		if(node.attributes) {
 			const anames = Object.keys(Object.getOwnPropertyDescriptors(node.attributes)).filter((key) => isNaN(parseInt(key))); // lets us use technically invalid attribute names like :$<somename>
 			let i = 0;
@@ -626,7 +662,7 @@ const bind = hcx.bind = (component,modelOrModelArgIndex=0) => {
 	throw new TypeError("First argument to hcx.bind must be a function or HTMLElement");
 }
 
-const customElement = hcx.customElement = (tagName,component,{observed=[],callbacks={},properties={},extend={},defaultModel={},modelArgIndex=0,bound,listeners,reactiveObserved,shadow=true}={}) => {
+const customElement = hcx.customElement = (tagName,component,{init,observed=[],callbacks={},properties={},extend={},defaultModel={},modelArgIndex=0,listeners,reactiveObserved,shadow=true}={}) => {
 	const type=typeof(component),
 	cls = extend.class || HTMLElement,
 	cname = tagName.split("-").map((part) => part[0].toUpperCase()+part.substring(1)).join(""),
@@ -634,36 +670,98 @@ const customElement = hcx.customElement = (tagName,component,{observed=[],callba
 		return observed.slice(0);
 	},
 	_customElement = Function("getObservedAttributes",`return class ${cname} extends ${cls.name} { constructor(model,options) { super(); this.construct(model,options) }  static get observedAttributes() { return getObservedAttributes(); }}`)(getObservedAttributes);
+	let _component;
 	if(type==="string") {
-		const _component = parser.parseFromString(`<body>${component}</body>`,"text/html").body.firstElementChild;
-		component = () => _component;
-	} else if(component && type==="object" && component instanceof HTMLElement) {
-		const _component = component;
-		component = () => _component;
+		if(component[0]==="#") {
+			_component = document.getElementById(component);
+		}
+		if(!_component) {
+			_component = parser.parseFromString(`<body>${component}</body>`,"text/html").body.firstElementChild;
+		}
+	} else {
+		_component = component;
 	}
-	if(component && typeof(component)!=="function") {
-		throw new TypeError("Second argument to hcx.customElement must be a function or HTMLElement");
-	}
-	_customElement.component = component;
+	//if(_component && typeof(_component)==="object" && _component instanceof HTMLElement) {
+	//	_component = _component.cloneNode(true);
+	//}
+	let _model;
 	Object.assign(_customElement.prototype,properties);
 	_customElement.prototype.construct = function(model={},options={}) {
-		const el = this,
-		_component = _customElement.component;
-		let component = _component,
-		_model = model;
-		component = (...args) => {
+		_model = createModel(model||{},{imports:observed,exports:observed,el:this},defaultModel);
+		component = async (...args) => {
 			let model = args[modelArgIndex];
-			_model = model||_model;
-			model = createModel(model||_model,{imports:observed,exports:observed},defaultModel);
-			args[modelArgIndex] = model;
-			if(_component && shadow && !this.shadowRoot) {
-				this.attachShadow({mode: 'open'});
+			_model = args[modelArgIndex] = model||_model;
+			let el = typeof(_component)==="function" ? await _component(...args) : (_component ? _component.cloneNode(true) : undefined);
+			if(el) {
+				/*const slots = [].slice.call(el.querySelectorAll("slot [name]")),
+					children = [].slice.call(this.children);
+				for(const slot of slots) {
+					const name = slot.getAttribute("name");
+					if(name) {
+						let hasvalue;
+						for(const child of children) {
+							if(child.getAttribute("slot")===name) {
+								while(slot.lastChild) {
+									slot.removeChild(slot.lastChild)
+								}
+								slot.appendChild(child);
+								hasvalue = true;
+							}
+						}
+						//if(!hasvalue && slot.childNodes.length===0) {
+						//	slot.parentElement.removeChild(slot);
+						//}
+					}
+				}
+				const mainslot = el.querySelector("slot:not([name])");
+				if(this.children.length>0) {
+					while(mainslot.lastChild) {
+						mainslot.removeChild(mainslot.lastChild);
+					}
+					for(const child of this.children) {
+						mainslot.appendChild(child);
+					}
+				}
+				this.appendChild(el);*/
+				const mainslot = el.querySelector("slot:not([name])");
+				for(const child of [].slice.call(this.children)) {
+					const sname = child.getAttribute("slot");
+					if(sname) {
+						const slot = el.querySelector(`slot [name='${sname}']`);
+						if(slot) {
+							while(slot.lastChild) {
+								slot.removeChild(slot.lastChild)
+							}
+							slot.appendChild(child);
+						}
+					} else if(mainslot) {
+						mainslot.appendChild(child)
+					}
+					
+				}
+				while(this.lastChild) {
+					this.removeChild(this.lastChild);
+				}
+				const slots = [].slice.call(el.querySelectorAll("slot"));
+				for(const slot of slots) {
+					if(slot.hasAttribute("name") && slot.childNodes.length===0) {
+						slot.style.display = "none";
+					}
+				}
+				this.appendChild(el);
 			}
-			return render(_component ? _component(...args) : this,model,_component ? this.shadowRoot : undefined);
+			if(shadow && !this.shadowRoot) {
+				this.attachShadow({mode: 'open'});
+				while(this.lastChild) {
+					this.shadowRoot.appendChild(this.lastChild);
+				}
+			}
+			if(init) {
+				init(this,_model);
+			}
+			return render(this.shadowRoot||this,_model);
 		}
-		if(bound) {
-			component = bind(component,modelArgIndex);
-		}
+		component = bind(component);
 		if(listeners) {
 			component = addEventListeners(component,listeners);
 		}
@@ -678,6 +776,7 @@ const customElement = hcx.customElement = (tagName,component,{observed=[],callba
 		if(callbacks.attributeChanged) {
 			await callbacks.attributeChanged.call(this,name,oldValue,newValue);
 		}
+		_model[name] = newValue;
 		if(reactiveObserved===true) {
 			this.render();
 		}
@@ -703,11 +802,12 @@ const customElement = hcx.customElement = (tagName,component,{observed=[],callba
 	return _customElement;
 }
 
-const createModel = hcx.model = (object={},{imports=[],exports=[],reactive}={},defaultModel) => { // defaultModel is used only by customElements;
-	let el;
-	const rendering = document.renderingNode;
+const createModel = hcx.model = (object={},{imports=[],exports=[],reactive,el}={},defaultModel) => { // defaultModel is used only by customElements;
+	const rendering = document.renderingNode,
+		_imports = imports.map((key) => camelize(key)),
+		_exports = exports.map((key) => camelize(key));
 	document.renderingNode = null;
-	const pseudoObject = Object.keys(object).concat(imports,exports).reduce((accum,key) => { accum[key] = undefined; return accum; },{}),
+	const pseudoObject = Object.keys(object).concat(_imports,_exports).reduce((accum,key) => { accum[key] = undefined; return accum; },{}),
 	proxy = new Proxy(pseudoObject,{
 		get(_,property) {
 			if(property==="hcxIsModel") {
@@ -724,7 +824,7 @@ const createModel = hcx.model = (object={},{imports=[],exports=[],reactive}={},d
 				} catch(e) {
 					;
 				}
-				if(exports.includes(property)) {
+				if(_exports.includes(property)) {
 					el[property] = value;
 				}
 			}
@@ -742,6 +842,7 @@ const createModel = hcx.model = (object={},{imports=[],exports=[],reactive}={},d
 							const doimport = imports.includes(attribute.name),
 							doexport = exports.includes(attribute.name);
 							if(doimport || doexport) {
+								const key = camelize(attribute.name);
 								let value = attribute.value;
 								if(value && value.includes("${")) {
 									value = resolve({node:el,text:value,model:proxy,extras:{},hcx:hcxSync});
@@ -752,42 +853,49 @@ const createModel = hcx.model = (object={},{imports=[],exports=[],reactive}={},d
 									;
 								}
 								if(doimport) {
-									object[attribute.name] = value;
+									object[key] = value;
 								}
 								if(doexport) {
-									el[attribute.name] = value;
+									el[key] = value;
 								}
 							}
 						}
 					}
-					Object.keys(object).forEach((key) => {
-						if(exports.includes(key) && !el.attributes[key]) {
+					/*Object.keys(object).forEach((key) => {
+						const name = decamelize(key);
+						if(_exports.includes(key) && !el.attributes[name]) {
 							const value = object[key];
 							if(!value || (typeof(value)!=="object" && typeof(value)!=="function")) {
-								sel.setAttribute(key,value)
+								el.setAttribute(name,value)
 							}
 						}
-					});
+					});*/
 				}
 			} else {
-				object[property] = value;
+				const key = camelize(property);
+				object[key] = value;
 				if(el && el.attributes) {
-					if(exports.includes(property)) {
-						if(!value || typeof(value)!=="object") {
-							el.setAttribute(property,value);
-						} else {
+					if(_exports.includes(key)) {
+						if(el[key]!==value) {
+							el[key] = value;
+						}
+						if(value && typeof(value)==="object") {
 							try {
-								el.setAttribute(property,JSON.stringify(value));
+								value = JSON.stringify(value);
 							} catch(e) {
-								;
+								return;
 							}
 						}
-						el[property] = value;
+						name = decamelize(property);
+						if(el.getAttribute(name)!=value) {
+							el.setAttribute(name,value);
+						}
 					}
 				}
 			}
 			return true;
 		}
 	});
+	document.renderingNode = rendering;
 	return reactive ? reactor(proxy) : proxy;
 }

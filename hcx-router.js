@@ -93,7 +93,7 @@ function createRouter() {
 						} catch(e) {
 							;
 						}
-						if(key==="$to") {
+						if(key==="$to" || key==="$src") {
 							to = `#${value}`;
 						} else {
 							model[key] = value;
@@ -129,7 +129,7 @@ function createRouter() {
 			}
 			if(!path || matched) {
 				const defaultselector = to || (location.hash.includes("?") ? location.hash.substring(0,location.hash.indexOf("?")) : location.hash),
-					selector = hcxRouter.attributes.to ? hcxRouter.attributes.to.value : defaultselector,
+					selector = hcxRouter.attributes.to ? hcxRouter.attributes.to.value : (hcxRouter.attributes.src ? hcxRouter.attributes.src.value : defaultselector),
 					runnable = hcxRouter.getAttribute("runnable"),
 					revent = new Event("route"),
 					targets = [].slice.call(elements);

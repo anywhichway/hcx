@@ -643,14 +643,14 @@ router.addEventListener("route",(event) => { // if you make this async, event.pr
 
 Custom elements can be added using the function:
 
-`hcx.customElement(tagName,component,{observed=[],callbacks={},properties={},extend={},defaultModel={},modelArgIndex=0,listeners,reactiveObserved,shadow=true}={})`
+`hcx.customElement(tagName,component,{init,observed=[],callbacks={},properties={},extend={},defaultModel={},modelArgIndex=0,listeners,reactiveObserved,shadow=true}={})`
 
 `tagName` - Per industry standard must include at least one `-`. Can be mixed case to support camel casing the component class that is created, e.g.
 `HCX-include` creates a class called `HCXInclude`. However, per industry standard the actual HTML tag will be single case, e.g. `hcx-include`.
 
 `component` - A string, or HTML Element, or function returning an HTML Element to use for the definition. It can also be `null` or `undefined`, in which
 case a container element is created such that all inner HTML is preserved at rendering time. This allows the use of custom elements for purely
-stylistic and UI funcation purposes. See `examples/container.html`.
+stylistic and UI function purposes. See `examples/container.html`.
 
 `observed` - Attributes to be observed per [industry standard for the `attributeChangedCallback`](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#Using_the_lifecycle_callbacks).
 Observed attributes are also automatically imported to the model and exported directly onto the element when they change.
