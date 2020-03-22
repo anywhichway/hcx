@@ -1,0 +1,183 @@
+<html>
+<head>
+
+</head>
+<body>
+
+<script type="module">
+	import {hcx} from "../hcx.js";
+	
+	const initPortal = (portal,model={}) => {
+		/*const height = model.height||portal.style.height,
+			width = model.width||portal.style.width;
+		if(height) {
+			portal.shadowRoot.firstElementChild.style.height = height;
+		}
+		if(width) {
+			portal.shadowRoot.firstElementChild.style.width = width;
+		}
+		if(!width || !height) {
+			portal.shadowRoot.firstElementChild.style.display = "flex"
+		}*/
+		portal.layout("tile");
+	}
+
+// pu tportal in desktop
+	
+	const portalProperties = {
+		addPortlet(config={}) {
+			this.appendChild(new HCXPortlet(config));
+		},
+		layout(type) {
+			const el = this.shadowRoot.querySelector("slot:not([name])"),
+				width = this.getAttribute("vertical-layout-width"),
+				height = this.getAttribute("horizontal-layout-height");
+			if(type==="tile") {
+				if(width && height) {
+					this.shadowRoot.firstElementChild.style.display = "normal"
+					this.shadowRoot.firstElementChild.style.width = width;
+					this.shadowRoot.firstElementChild.style.height = height;
+				} else {
+					this.shadowRoot.firstElementChild.style.width = this.style.width;
+					this.shadowRoot.firstElementChild.style.height = this.style.height;
+					this.shadowRoot.firstElementChild.style.display = "flex";
+				}
+				el.style.display = "inline-block";
+				el.style.width = "100%";
+				el.style.whiteSpace = "normal";
+				for(const child of el.children) {
+					child.style.display = "inline-block"
+				}
+				return;
+			}
+			if(type==="horizontal") {
+				if(height) {
+					this.shadowRoot.firstElementChild.style.display = "block"
+					this.shadowRoot.firstElementChild.style.height = height;
+				} else {
+					this.shadowRoot.firstElementChild.style.width = this.style.width;
+					this.shadowRoot.firstElementChild.style.height = this.style.height;
+					this.shadowRoot.firstElementChild.style.display = "flex";
+				}
+				el.style.display = "inline-block";
+				el.style.width = "100%";
+				el.style.whiteSpace = "nowrap";
+				for(const child of el.children) {
+					child.style.display = "inline-block"
+				}
+				return;
+			}
+			if(type==="vertical") {
+				if(width) {
+					this.shadowRoot.firstElementChild.style.display = "block"
+					this.shadowRoot.firstElementChild.style.width = width;
+				} else {
+					this.shadowRoot.firstElementChild.style.width = this.style.width;
+					this.shadowRoot.firstElementChild.style.height = this.style.height;
+					this.shadowRoot.firstElementChild.style.display = "flex";
+				}
+				el.style.display = "inline-block";
+				el.style.width = "100%";
+				el.style.whiteSpace = "normal";
+				for(const child of el.children) {
+					child.style.display = "block";
+				}
+				return;
+			}
+		}
+	}
+	
+	const portal = `<div>
+				<slot style="width:100%;z-index:100;text-align:center;display:inline-block;" name="topTray"></slot>
+				<slot style="float:left;z-index:100;display:inline-block;" name="leftTray"></slot>
+				<slot style="height:100%;width:calc(100% - 50px);max-height:100%;max-width:calc(100% - 50px);overflow:auto;"></slot>
+				<slot style="float:right;z-index:100;display:inline-block;" name="rightTray"></slot>
+				<slot style="width:100%;z-index:100;text-align:center;display:inline-block;" name="bottomTray"></slot>
+				</div>
+			</div>`
+	const HCXPortal = hcx.customElement("HCX-portal",portal,{init:initPortal,observed:["height","width"],properties:portalProperties});
+	HCXPortal.define();
+	
+	const portlet = ({title,headerStyle}={}) => {
+		return hcx.sync`
+			<div style="border:solid 1px;padding:0px;height:98%;width:98%;" on:mousedown="mousedown(event)">
+				<div id="header" style="${headerStyle}">
+					<div id="title" style="float:left">${title}</div>
+					<div id="controls" style="float:right"></div>
+				</div>
+				<iframe style="display:block;border-style:none;border-top:solid 1px;width:100%"></iframe>
+			</div>`;
+	}
+	
+	const initPortlet = (portlet,{pin,stickX,stickY,title}={}) => {
+		portlet.stick(stickX,stickY);
+		if(!portlet.style.width) {
+			portlet.style.width = "200";
+		}
+		if(!portlet.style.height) {
+			portlet.style.height = "200";
+		}
+	}
+	
+	const portletObserved = [
+		"title",
+		"header-style",
+		"stick-x",
+		"stick-y"
+	];
+	
+	const portletProperties = {
+		close() {
+			;
+		},
+		maximize() {
+			;
+		},
+		minimize() {
+			;
+		},
+		pin(location) {
+			;
+		},
+		stick(stickX,stickY) {
+			/*if(stickX || stickY) {
+				this.style.position = "absolute";
+				if(stickX) {
+					this.style[stickX] = "0px";
+				} else {
+					this.style[stickX] = "original"
+				}
+				if(stickX) {
+					this.style[stickY] = "0px";
+				} else {
+					this.style[stickY] = "original"
+				}
+			} else {
+				this.style.position = "original";
+			}*/
+		}
+	}
+
+	const portletListeners = {
+		mousedown(event) {
+			console.log(event);
+		}
+	}
+	
+	const HCXPortlet = hcx.customElement("HCX-portlet",portlet,{init:initPortlet,observed:portletObserved,properties:portletProperties,listeners:portletListeners})
+	HCXPortlet.define();
+	
+</script>
+	
+	<hcx-portal id="myportal" style="padding:2px;" vertical-layout-width="275px">
+		<hcx-portlet title="My Portlet One"  style="width:200px;height:200px" header-style="font-size:.5em" ></hcx-portlet>
+		<hcx-portlet title="My Portlet Two"  style="width:200px;height:200px" header-style="font-size:.5em"></hcx-portlet>
+		<hcx-portlet title="My Portlet Three" style="width:200px;height:200px"  header-style="font-size:.5em"></hcx-portlet>
+		<hcx-portlet title="My Portlet Four" style="width:200px;height:200px"  header-style="font-size:.5em"></hcx-portlet>
+	</hcx-portal>
+	
+	<button onclick="myportal.layout('tile')">Tile</button>
+	<button onclick="myportal.layout('horizontal')">Horizontal</button>
+	<button onclick="myportal.layout('vertical')">Vertical</button>
+</body>
+</html>
